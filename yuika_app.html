@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>せいかつクエスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wood:#8a6240; --wood-dark:#5c4028; --wood-darker:#3f2b1a;
+  --cream:#f5e8c8; --cream-dark:#e6d3a3;
+  --green:#4a8f4a; --green-dark:#2f5f2f;
+  --blue:#4a7bc2; --blue-dark:#2c4f82; --sky1:#5a9bd8; --sky2:#a9d8f0;
+  --purple:#7a5a9e; --purple-dark:#4e3868;
+  --gold:#f2b632; --gold-dark:#c8891a;
+  --red:#c0392b; --ink:#2b2015;
+
+  --ic-scale:1;
+  --ic-sm:16px; --ic-lg:22px; --ic-status:28px; --ic-money:34px;
+  --ic-reward:14px; --ic-tile:58px; --ic-inv:26px; --ic-shop:30px;
+  --ic-use:22px; --ic-nav:26px; --ic-gacha:110px;
+  --gap-status:20px;
+  --bg-room:url('image/assets/bg_room.png');
+  --bg-character:url('image/assets/scene_character.png');
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'DotGothic16','Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic UI',sans-serif;
+  background:#1c1712; color:var(--ink);
+  display:flex; justify-content:center; align-items:flex-start;
+  min-height:100vh; padding:16px;
+}
+.app{
+  width:100%; max-width:420px;
+  height:calc(100vh - 32px);
+  height:calc(100dvh - 32px);
+  background:var(--wood-darker);
+  border:4px solid #241a10; border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 10px 40px rgba(0,0,0,.6);
+  display:flex; flex-direction:column; position:relative;
+}
+.app-body{
+  flex:1 1 auto; min-height:0;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  display:flex; flex-direction:column;
+  background-image:var(--bg-room);
+  background-size:100% auto; background-repeat:repeat-y; background-position:top center;
+  background-color:var(--wood-darker);
+}
+.topbar{
+  position:sticky; top:0; z-index:60;
+  padding:10px 12px;
+  display:flex; gap:8px; justify-content:space-between; align-items:flex-start;
+  background:transparent; border:none; box-shadow:none;
+  pointer-events:none;
+}
+.topbar .pill{pointer-events:auto;}
+.app.hide-topbar .topbar{display:none;}
+.pill{
+  background:rgba(63,43,26,.86); border:2px solid #26190d; border-radius:14px;
+  padding:8px 12px; display:flex; flex-direction:column; gap:5px;
+  color:var(--cream); font-size:13px; flex:1;
+  box-shadow:0 3px 0 rgba(0,0,0,.35);
+}
+
+/* ===== アイコン共通 ===== */
+.icon-img{
+  width:calc(var(--ic-sm)*var(--ic-scale)); height:calc(var(--ic-sm)*var(--ic-scale));
+  vertical-align:-3px; image-rendering:pixelated; object-fit:contain;
+}
+.icon-img.lg{
+  width:calc(var(--ic-lg)*var(--ic-scale)); height:calc(var(--ic-lg)*var(--ic-scale));
+  vertical-align:-6px;
+}
+.icon-img.xl{
+  width:calc(var(--ic-money)*var(--ic-scale)); height:calc(var(--ic-money)*var(--ic-scale));
+  vertical-align:-9px;
+}
+.ri{object-fit:contain; image-rendering:pixelated; display:block;}
+.ri-e{line-height:1; display:inline-block;}
+img.ri{width:var(--s); height:var(--s);}
+span.ri-e{font-size:var(--s);}
+.s-tile{--s:calc(var(--ic-tile)*var(--ic-scale));}
+.s-inv{--s:calc(var(--ic-inv)*var(--ic-scale));}
+.s-shop{--s:calc(var(--ic-shop)*var(--ic-scale));}
+.s-use{--s:calc(var(--ic-use)*var(--ic-scale));}
+.s-modal{--s:64px;}
+.icon-fb{
+  display:inline-flex; align-items:center; justify-content:center; line-height:1;
+  font-size:calc(var(--ic-sm)*var(--ic-scale)); vertical-align:-3px;
+}
+.icon-fb.lg{font-size:calc(var(--ic-lg)*var(--ic-scale)); vertical-align:-6px;}
+.icon-fb.xl{font-size:calc(var(--ic-money)*var(--ic-scale)); vertical-align:-9px;}
+.status-card .icon-fb.lg{font-size:calc(var(--ic-status)*var(--ic-scale)*1.3);}
+
+.tile-reward .icon-fb{font-size:calc(var(--ic-reward)*var(--ic-scale));}
+.shop-item-icon .icon-fb{font-size:calc(var(--ic-shop)*var(--ic-scale));}
+span.gacha-emoji{
+  display:flex; align-items:center; justify-content:center;
+  font-size:calc(var(--ic-gacha)*var(--ic-scale)*.82);
+}
+
+.lv-wrap{flex:1.5;}
+.lv-row{display:flex; align-items:baseline; gap:6px; font-size:21px; font-weight:bold; flex-wrap:wrap;}
+.lv-row .lv-label{font-size:13px; color:var(--cream-dark); font-weight:normal;}
+.lv-row .player-name{
+  font-size:14px; color:#fff; font-weight:bold;
+  max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  margin-left:14px;
+}
+@keyframes lvPop{0%{transform:scale(1)} 35%{transform:scale(1.28)} 100%{transform:scale(1)}}
+.lv-row.lv-pop{animation:lvPop .65s ease; transform-origin:left center;}
+.lv-bar-row{display:flex; align-items:center; gap:6px; margin-top:2px;}
+.lv-bar-bg{flex:1; height:8px; background:#2a1d12; border-radius:5px; overflow:hidden; border:1px solid #1a1108;}
+.lv-bar-fill{height:100%; background:linear-gradient(180deg,#7fd47f,var(--green-dark)); transition:width .4s;}
+.lv-pct{font-size:11px; color:var(--cream-dark); min-width:30px; text-align:right;}
+.money-pill{gap:3px; flex:1.15; justify-content:center; align-items:center;}
+.money-pill .date-row{
+  font-size:15px; font-weight:bold; color:var(--cream);
+  letter-spacing:.5px; line-height:1.25; white-space:nowrap;
+  text-shadow:1px 1px 0 rgba(0,0,0,.55);
+}
+.money-pill .money-row{display:flex; align-items:center; gap:8px; font-size:22px; font-weight:bold;}
+
+.screen{flex:1 0 auto; padding:12px; position:relative;}
+.screen.hidden{display:none;}
+.screen-main{background:transparent; padding-top:var(--gap-status); padding-bottom:18px;}
+
+.sec-title{
+  display:flex; align-items:center; gap:8px;
+  color:#ffeec0; font-size:14px; font-weight:bold;
+  margin:16px 2px 8px; text-shadow:1px 2px 0 rgba(0,0,0,.7);
+}
+.sec-title:first-child{margin-top:4px;}
+.sec-title::after{content:""; flex:1; height:3px; background:rgba(255,238,192,.32); border-radius:2px;}
+.sec-note{font-size:10.5px; color:#e2cfa4; font-weight:normal;}
+.sec-empty{
+  color:#e2cfa4; font-size:11.5px; text-align:center;
+  background:rgba(28,20,10,.5); border:2px dashed rgba(255,238,192,.3);
+  border-radius:10px; padding:12px 8px;
+}
+
+/* ===== メッセージ ===== */
+.msg-box{
+  background:rgba(255,251,230,.96); border:3px solid var(--gold);
+  border-radius:12px; padding:9px 11px; margin-bottom:12px;
+  box-shadow:0 3px 0 rgba(0,0,0,.35);
+}
+.msg-head{font-size:12px; font-weight:bold; color:var(--gold-dark); margin-bottom:5px;}
+.msg-body{
+  max-height:104px; overflow-y:auto; padding-right:4px;
+  white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
+  font-size:14px; line-height:1.7; color:var(--ink);
+  -webkit-overflow-scrolling:touch;
+}
+.msg-body::-webkit-scrollbar{width:6px;}
+.msg-body::-webkit-scrollbar-thumb{background:var(--gold-dark); border-radius:3px;}
+
+/* ===== タイル ===== */
+.tile-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+.tile{
+  background:var(--cream); border:4px solid var(--wood-darker); border-radius:14px;
+  padding:10px 6px; display:flex; flex-direction:column; align-items:center; gap:8px;
+  cursor:pointer; position:relative; user-select:none; transition:transform .08s;
+  aspect-ratio:1/1; min-height:148px; justify-content:center;
+  box-shadow:0 4px 0 rgba(0,0,0,.38); overflow:hidden;
+}
+.tile:active{transform:scale(.95);}
+.tile:focus-visible{outline:3px solid #ffd76a; outline-offset:2px;}
+.tile-reward{position:absolute; top:6px; left:6px; display:flex; gap:5px; z-index:5;}
+.tile-reward span{
+  background:rgba(28,20,10,.78); color:#fff; font-size:11.5px; font-weight:bold;
+  border-radius:7px; padding:2px 6px; display:flex; align-items:center; gap:3px;
+  text-shadow:1px 1px 0 rgba(0,0,0,.6);
+}
+.tile-reward img{
+  width:calc(var(--ic-reward)*var(--ic-scale)); height:calc(var(--ic-reward)*var(--ic-scale));
+  object-fit:contain; image-rendering:pixelated;
+}
+.tile-name-bar{
+  position:absolute; bottom:0; left:0; right:0; z-index:5;
+  background:rgba(28,20,10,.78); color:#fff;
+  font-size:13.5px; font-weight:bold; text-align:center;
+  padding:6px 4px; line-height:1.15;
+  text-shadow:1px 1px 0 rgba(0,0,0,.6);
+}
+.tile.done{filter:grayscale(.25) brightness(.88);}
+.tile.done::before{content:""; position:absolute; inset:0; background:rgba(20,15,8,.55); z-index:6;}
+.tile.done::after{
+  content:"達成済み"; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:#fff; font-size:15px; font-weight:bold; z-index:7;
+  background:var(--green-dark); padding:7px 14px; border-radius:9px; white-space:nowrap;
+  box-shadow:0 2px 5px rgba(0,0,0,.55); border:2px solid #1d3d1d; line-height:1.1;
+}
+.tile.pending::before{content:""; position:absolute; inset:0; background:rgba(20,15,8,.58); z-index:6;}
+.tile.pending::after{
+  content:"申請中"; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:#fff; font-size:15px; font-weight:bold; z-index:7;
+  background:var(--gold-dark); padding:7px 14px; border-radius:9px; white-space:nowrap;
+  box-shadow:0 2px 5px rgba(0,0,0,.55); border:2px solid #7a520d; line-height:1.1;
+}
+.tile.has-card{padding:0; background:#2b2015;}
+.tile.has-card .tile-card-img{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; display:block; image-rendering:pixelated; z-index:1;
+}
+.tile-icon{
+  width:calc(var(--ic-tile)*var(--ic-scale)); height:calc(var(--ic-tile)*var(--ic-scale));
+  display:flex; align-items:center; justify-content:center;
+}
+.tile-label{font-size:14px; text-align:center; line-height:1.2; color:var(--wood-darker); font-weight:bold; padding:0 2px 14px;}
+
+.tile.special{
+  border-color:#ffe08a;
+  background:linear-gradient(180deg,#fff3cd,#f4d98a);
+  animation:spGlow 1.9s ease-in-out infinite;
+}
+@keyframes spGlow{
+  0%,100%{box-shadow:0 0 0 2px rgba(255,228,150,.5), 0 0 12px 3px rgba(255,196,60,.45), 0 4px 0 rgba(0,0,0,.38);}
+  50%    {box-shadow:0 0 0 3px rgba(255,246,205,.95), 0 0 26px 9px rgba(255,196,60,.85), 0 4px 0 rgba(0,0,0,.38);}
+}
+.sp-surface{
+  position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden;
+  background:linear-gradient(135deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 45%);
+}
+.sp-surface::after{
+  content:""; position:absolute; top:-55%; left:-140%; width:55%; height:210%;
+  background:linear-gradient(100deg, transparent 0%, rgba(255,255,255,.88) 50%, transparent 100%);
+  transform:rotate(16deg); animation:spSweep 2.8s linear infinite;
+}
+@keyframes spSweep{0%{left:-140%} 55%{left:150%} 100%{left:150%}}
+.sp-stars{position:absolute; inset:0; z-index:4; pointer-events:none;}
+.sp-stars i{
+  position:absolute; width:11px; height:11px; opacity:0;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.95) 0 13%, transparent 14%),
+    linear-gradient(to right, transparent 43%, #fff8d6 43% 57%, transparent 57%),
+    linear-gradient(to bottom, transparent 43%, #fff8d6 43% 57%, transparent 57%);
+  filter:drop-shadow(0 0 4px #ffd76a);
+  animation:spTwinkle 1.7s ease-in-out infinite;
+}
+@keyframes spTwinkle{
+  0%,100%{opacity:0; transform:scale(.35) rotate(0deg);}
+  50%    {opacity:1; transform:scale(1)  rotate(45deg);}
+}
+.sp-stars i:nth-child(1){top:12%; left:16%; animation-delay:0s;}
+.sp-stars i:nth-child(2){top:26%; right:14%; animation-delay:.45s;}
+.sp-stars i:nth-child(3){bottom:32%; left:24%; animation-delay:.9s;}
+.sp-stars i:nth-child(4){top:52%; right:24%; animation-delay:1.25s; width:8px; height:8px;}
+.sp-stars i:nth-child(5){bottom:20%; right:38%; animation-delay:.65s; width:8px; height:8px;}
+.tile.special.done, .tile.special.pending{animation:none; box-shadow:0 4px 0 rgba(0,0,0,.38);}
+.tile.special.done .sp-surface, .tile.special.done .sp-stars,
+.tile.special.pending .sp-surface, .tile.special.pending .sp-stars{display:none;}
+@media (prefers-reduced-motion:reduce){
+  .tile.special{animation:none;}
+  .sp-surface::after,.sp-stars i{animation:none;}
+  .sp-stars i{opacity:.85; transform:scale(1) rotate(45deg);}
+}
+
+/* ===== ステータス ===== */
+.screen-status{
+  background:linear-gradient(180deg, var(--sky1), var(--sky2) 55%, #cdeeb0 55%, #a9d878 100%);
+  padding-top:14px; padding-bottom:18px;
+}
+.status-title{text-align:center; color:#fff; font-size:20px; padding:2px 0 10px; text-shadow:0 2px 0 #274b73;}
+.status-cards{display:flex; gap:8px; margin-bottom:var(--gap-status); align-items:stretch;}
+.status-card{
+  flex:1; background:var(--cream); border:3px solid var(--wood-darker); border-radius:10px;
+  padding:10px 8px; text-align:center; display:flex; flex-direction:column; justify-content:center;
+  min-width:0;
+}
+.status-card .label{font-size:12px; color:#5c4028; margin-bottom:5px;}
+.status-card .value{
+  font-size:27px; font-weight:bold; line-height:1.15;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  color:var(--wood-darker); word-break:break-all;
+}
+.status-card .icon-img.lg{
+  width:calc(var(--ic-status)*var(--ic-scale)*1.45);
+  height:calc(var(--ic-status)*var(--ic-scale)*1.45);
+  vertical-align:-7px; object-fit:contain; image-rendering:pixelated;
+}
+
+.status-card .lv-star{
+  width:calc(var(--ic-status)*var(--ic-scale)*1.45);
+  height:calc(var(--ic-status)*var(--ic-scale)*1.45);
+  object-fit:contain; image-rendering:pixelated; flex:none;
+}
+span.lv-star{display:inline-flex; align-items:center; justify-content:center;
+  font-size:calc(var(--ic-status)*var(--ic-scale)*1.3);}
+.status-card .lv-bar-row{display:flex; align-items:center; gap:5px; margin-top:8px;}
+.status-card .lv-bar-bg{height:10px;}
+.status-card .lv-pct{font-size:12px; color:#5c4028; min-width:34px; text-align:right;}
+.status-card .exp-text{font-size:16px; font-weight:bold; color:#4a3520; margin-top:5px;}
+.status-card .status-date{
+  font-size:22px; font-weight:bold; color:#4a3520;
+  margin-top:8px; padding-top:7px; border-top:2px dotted #c8b48a;
+  white-space:normal; line-height:1.3; letter-spacing:.5px;
+}
+.avatar-stage{
+  height:210px; position:relative; margin-bottom:14px;
+  border:3px solid var(--wood-darker); border-radius:12px; overflow:hidden;
+  background-image:var(--bg-character);
+  background-size:100% auto;              /* ★ 横幅ぴったり＝左右の余白なし */
+  background-repeat:no-repeat; background-position:center bottom;
+  background-color:#bfe0f5;
+}
+
+.avatar-name{
+  display:none;
+  position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,.45); color:#fff; border-radius:8px;
+  padding:4px 14px; font-size:13px; font-weight:bold; white-space:nowrap;
+}
+.avatar-lv{
+  display:none;
+  position:absolute; bottom:6px; right:8px;
+  background:rgba(0,0,0,.45); color:#ffe9a8; border-radius:8px;
+  padding:3px 10px; font-size:11.5px; font-weight:bold;
+}
+.inv-wrap{background:var(--blue-dark); border:3px solid var(--wood-darker); border-radius:12px; padding:10px;}
+.inv-title{color:var(--gold); text-align:center; font-size:15px; margin-bottom:8px;}
+.inv-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:8px;}
+.inv-item{
+  background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
+  padding:7px 4px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.inv-icon{display:flex; align-items:center; justify-content:center; min-height:calc(var(--ic-inv)*var(--ic-scale));}
+.inv-name{font-size:10.5px; font-weight:bold; color:var(--wood-darker); line-height:1.1; min-height:22px;}
+.use-btn{
+  background:var(--green); color:#fff; border:2px solid var(--green-dark); border-radius:7px;
+  font-size:10.5px; padding:3px 0; width:100%; cursor:pointer; font-family:inherit;
+}
+.use-btn:disabled{background:#999; border-color:#666; cursor:default;}
+.inv-empty{grid-column:1/-1; text-align:center; color:var(--cream-dark); font-size:12px; padding:10px 0;}
+.use-sec-title{color:#ffe9a8; text-align:center; font-size:12.5px; margin:12px 0 6px;}
+.use-list{display:flex; flex-direction:column; gap:6px;}
+.use-row{
+  display:flex; align-items:center; gap:8px;
+  background:rgba(0,0,0,.3); border:2px solid #1a2f4a; border-radius:9px;
+  padding:6px 8px; color:#fff; font-size:11.5px;
+}
+.use-row .u-name{flex:1; font-weight:bold; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+.use-row .u-state{
+  background:var(--gold-dark); border:1px solid #7a520d; border-radius:6px;
+  padding:3px 8px; font-size:10.5px; font-weight:bold; white-space:nowrap;
+}
+
+/* ===== アイテムのやりとり ===== */
+.trade-wrap{
+  margin-top:12px; background:var(--purple-dark);
+  border:3px solid var(--wood-darker); border-radius:12px; padding:10px;
+}
+.trade-title{color:#ffe9a8; text-align:center; font-size:14px; margin-bottom:9px;}
+.trade-row{display:flex; gap:7px; align-items:center; margin-bottom:8px;}
+.trade-row > label{color:#fff; font-size:11.5px; width:62px; flex:none;}
+.trade-row select, .trade-row input{
+  flex:1; min-width:0; font-family:inherit; font-size:12.5px; padding:7px;
+  border:2px solid var(--wood-darker); border-radius:8px;
+  background:var(--cream); color:var(--ink);
+}
+.trade-row input[type=number]{flex:none; width:70px; text-align:center;}
+.send-btn{
+  width:100%; font-family:inherit; font-weight:bold; font-size:15px; letter-spacing:1px;
+  color:#4a3000; background:var(--gold); border:3px solid var(--gold-dark);
+  padding:11px 0; cursor:pointer;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.4), 0 4px 0 #7a4f08;
+}
+.send-btn:active{transform:translateY(4px); box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
+.send-btn:disabled{background:#9a9a9a; border-color:#6b6b6b; color:#eee; cursor:default; transform:none; box-shadow:none;}
+.trade-empty{color:#e2cfa4; font-size:11.5px; text-align:center; padding:8px 4px; line-height:1.6;}
+.trade-note{color:#d6c6ee; font-size:10.5px; text-align:center; margin-top:7px; line-height:1.5;}
+
+/* ===== おみせ ===== */
+.screen-shop{background:linear-gradient(180deg,#3a2a52,#2a1e3c); padding-top:12px; padding-bottom:18px;}
+.shop-header{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+.shop-title{color:#fff; font-size:19px;}
+.shop-money{
+  background:rgba(0,0,0,.28); border:2px solid var(--purple-dark); border-radius:12px;
+  padding:5px 10px; color:#fff; font-size:17px; font-weight:bold; display:flex; align-items:center; gap:6px;
+}
+.shop-tabs{display:flex; gap:6px; margin-bottom:10px;}
+.shop-tab-btn{
+  flex:1; padding:10px 0; text-align:center; border-radius:0;
+  background:#4e3868; color:#cfbbe8;
+  font-family:inherit; font-size:13.5px; font-weight:bold; letter-spacing:2px;
+  border:3px solid #2b1a42; border-bottom:none;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.16), inset 0 -3px 0 rgba(0,0,0,.30);
+  text-shadow:1px 1px 0 rgba(0,0,0,.55);
+  cursor:pointer; image-rendering:pixelated; transition:none;
+}
+.shop-tab-btn.active{
+  background:var(--purple); color:#fff8dc; border-color:#8a5c0d;
+  box-shadow:inset 0 5px 0 var(--gold), inset 0 -4px 0 rgba(0,0,0,.24);
+}
+.shop-panel{display:none;}
+.shop-panel.active{display:block;}
+.shop-section-title{color:var(--gold); font-size:13px; margin:4px 0 8px; padding-left:2px;}
+.shop-item-row{
+  display:flex; align-items:center; gap:10px;
+  background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
+  padding:8px 10px; margin-bottom:8px;
+}
+.shop-item-icon{
+  width:calc(var(--ic-shop)*var(--ic-scale)); flex:none;
+  display:flex; align-items:center; justify-content:center;
+}
+.shop-item-info{flex:1; min-width:0;}
+.shop-item-name{font-size:13px; font-weight:bold; color:var(--wood-darker);}
+.shop-item-desc{font-size:10.5px; color:#5c4028;}
+.shop-item-price{font-size:17px; color:var(--gold-dark); font-weight:bold; display:flex; align-items:center; gap:4px; margin:3px 0 6px;}
+.buy-btn{
+  font-family:inherit; font-size:12px; font-weight:bold; letter-spacing:1px;
+  color:#fff; white-space:nowrap; padding:7px 13px; flex:none;
+  background:var(--green); border:3px solid var(--green-dark); border-radius:0;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.30), inset 0 -3px 0 rgba(0,0,0,.25), 0 4px 0 #1d3d1d;
+  text-shadow:1px 1px 0 rgba(0,0,0,.5);
+  cursor:pointer; image-rendering:pixelated; transition:none;
+}
+.buy-btn:active{transform:translateY(4px); box-shadow:inset 0 3px 0 rgba(255,255,255,.20), inset 0 -3px 0 rgba(0,0,0,.30);}
+.buy-btn:disabled{
+  background:#8d8d8d; border-color:#5f5f5f; color:#eaeaea; cursor:default; transform:none;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.20), 0 4px 0 #4a4a4a;
+}
+.gacha-box{background:var(--cream); border:3px solid var(--wood-darker); border-radius:12px; padding:14px; text-align:center;}
+.gacha-emoji{
+  width:calc(var(--ic-gacha)*var(--ic-scale)); height:calc(var(--ic-gacha)*var(--ic-scale));
+  margin:0 auto; object-fit:contain; image-rendering:pixelated;
+}
+.gacha-desc{font-size:12px; color:#5c4028; margin:6px 0 10px;}
+.gacha-cost{font-size:20px; color:var(--gold-dark); font-weight:bold; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:6px;}
+.gacha-btn{
+  font-family:inherit; font-size:18px; font-weight:bold; letter-spacing:2px; color:#fff8dc;
+  padding:13px 28px; margin-bottom:5px;
+  background:var(--gold); border:3px solid #8a5c0d; border-radius:0;
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.38), inset 0 -4px 0 rgba(0,0,0,.20), 0 5px 0 #7a4f08;
+  text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  cursor:pointer; display:inline-block; image-rendering:pixelated; transition:none;
+}
+.gacha-btn:active{transform:translateY(5px); box-shadow:inset 0 4px 0 rgba(255,255,255,.25), inset 0 -4px 0 rgba(0,0,0,.25);}
+.gacha-btn:disabled{
+  background:#9a9a9a; border-color:#6b6b6b; color:#ededed; cursor:default; transform:none;
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.20), inset 0 -4px 0 rgba(0,0,0,.20), 0 5px 0 #5c5c5c;
+}
+
+/* ★ フッター：画像を全面表示・文字ラベルなし */
+.navbar{
+  flex:0 0 auto;
+  display:flex; width:100%;
+  background:var(--wood-darker); border-top:3px solid #26190d;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-btn{
+  flex:1 1 0; min-width:0; position:relative; overflow:hidden;
+  height:calc(var(--ic-nav)*var(--ic-scale)*2.7);
+  cursor:pointer; background:#2b2015;
+  border-right:2px solid #26190d;
+}
+.nav-btn:last-child{border-right:none;}
+.navbar .nav-img{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; image-rendering:pixelated; display:block;
+}
+span.nav-img{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:calc(var(--ic-nav)*var(--ic-scale)*1.3); background:#2b2015;
+}
+.nav-btn.active::after{
+  content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
+  box-shadow:inset 0 0 0 3px var(--gold);
+}
+.nav-btn:active{filter:brightness(1.15);}
+
+.toast{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+  background:#1c1712; color:#fff; padding:10px 18px; border-radius:10px; font-size:13px;
+  border:2px solid var(--gold); opacity:0; pointer-events:none; transition:all .25s; z-index:99;
+  text-align:center; max-width:80vw;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.modal-back{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:100; padding:16px;}
+.modal-back.show{display:flex;}
+.modal-box{background:var(--cream); border:4px solid var(--gold); border-radius:16px; padding:24px 20px; width:min(260px,90vw); text-align:center;}
+.modal-box .big-icon{display:flex; align-items:center; justify-content:center; min-height:64px; margin-bottom:8px;}
+.modal-box .rarity{font-size:12px; font-weight:bold; margin-bottom:4px;}
+.modal-box .name{font-size:16px; font-weight:bold; color:var(--wood-darker); margin-bottom:14px;}
+.modal-box .close-btn{background:var(--purple); color:#fff; border:2px solid var(--purple-dark); border-radius:8px; padding:8px 22px; font-family:inherit; cursor:pointer;}
+
+/* ===== レベルコレクション ===== */
+.gallery-wrap{
+  margin-top:12px; background:var(--blue-dark);
+  border:3px solid var(--wood-darker); border-radius:12px; padding:10px;
+}
+.gallery-title{color:var(--gold); text-align:center; font-size:14px; margin-bottom:9px;}
+.lv-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+.lv-cell{
+  position:relative; aspect-ratio:1/1; overflow:hidden; cursor:pointer;
+  background:#bfe0f5; border:2px solid var(--wood-darker); border-radius:10px;
+  transition:transform .08s;
+}
+.lv-cell:active{transform:scale(.96);}
+.lv-cell:focus-visible{outline:3px solid #ffd76a; outline-offset:2px;}
+.lv-cell img{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; object-position:center bottom;
+  display:block; image-rendering:pixelated;
+}
+.lv-cap{
+  position:absolute; bottom:0; left:0; right:0; z-index:2;
+  background:rgba(28,20,10,.78); color:#fff; font-size:12px; font-weight:bold;
+  text-align:center; padding:4px 2px; text-shadow:1px 1px 0 rgba(0,0,0,.6);
+}
+.gallery-empty{
+  grid-column:1/-1; text-align:center; color:var(--cream-dark);
+  font-size:12px; padding:10px 0;
+}
+.img-modal{
+  position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:120;
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; padding:16px; cursor:pointer;
+}
+.img-modal.show{display:flex;}
+.img-modal img{
+  max-width:100%; max-height:76vh; object-fit:contain; image-rendering:pixelated;
+  border:4px solid var(--gold); border-radius:14px; background:#bfe0f5;
+}
+.img-modal .cap{color:#ffe9a8; font-size:17px; font-weight:bold;}
+.img-modal .hint{color:#cbb98f; font-size:11.5px;}
+
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:#5c4028; border-radius:3px;}
+@media (max-width:400px){
+  :root{--ic-scale:.86; --gap-status:16px;}
+  body{padding:8px;}
+  .app{height:calc(100dvh - 16px); border-radius:16px;}
+  .screen{padding:10px;}
+  .tile-grid{gap:9px;}
+  .tile{min-height:120px; border-width:3px;}
+  .tile-name-bar{font-size:12px; padding:5px 3px;}
+  .tile-reward span{font-size:10.5px; padding:2px 5px;}
+  .lv-row{font-size:18px;}
+  .lv-row .player-name{font-size:12.5px; margin-left:10px; max-width:100px;}
+  .money-pill .date-row{font-size:12.5px;}
+  .money-pill .money-row{font-size:19px;}
+  .status-card .value{font-size:22px;}
+  .status-card .status-date{font-size:18px;}
+  .status-card .exp-text{font-size:14px;}
+  .avatar-stage{height:170px;}
+  .msg-body{max-height:88px; font-size:13px;}
+}
+@media (min-width:768px){
+  body{padding:24px;}
+  .app{max-width:460px; height:calc(100dvh - 48px);}
+}
+@media (orientation:landscape) and (max-height:520px){
+  body{padding:6px; align-items:stretch;}
+  .app{height:calc(100dvh - 12px);}
+  .avatar-stage{height:140px;}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="app-body" id="appBody">
+    <div class="topbar" id="topbar">
+      <div class="pill lv-wrap">
+        <div class="lv-row" id="lvRow">
+          <span class="lv-label">Lv.</span><span id="lvText">1</span>
+          <span class="player-name" id="playerNameText"></span>
+        </div>
+        <div class="lv-bar-row">
+          <img class="icon-img lg" data-icon="star" data-fb="⭐" src="image/assets/star.gif" alt="EXP">
+          <div class="lv-bar-bg"><div class="lv-bar-fill" id="expBar" style="width:0%"></div></div>
+          <div class="lv-pct" id="expPct">0%</div>
+        </div>
+      </div>
+      <div class="pill money-pill">
+        <div class="date-row" id="dateText">----/--/--</div>
+        <div class="money-row"><img class="icon-img xl" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"><span id="moneyText">0</span></div>
+      </div>
+    </div>
+
+    <div class="screen screen-main" id="screen-main">
+      <section class="msg-box" id="msgBox" hidden>
+        <div class="msg-head">💬 メッセージ</div>
+        <div class="msg-body" id="msgBody"></div>
+      </section>
+      <div id="tileSections"></div>
+    </div>
+
+    <div class="screen screen-status hidden" id="screen-status">
+      <div class="status-title">★ ステータス ★</div>
+      <div class="status-cards">
+        <div class="status-card">
+          <div class="label">レベル / けいけんち</div>
+          <div class="value">
+            <img class="lv-star" data-icon="star" data-fb="⭐" src="image/assets/star.gif" alt="EXP">
+            <span id="statusLv">Lv. 1</span>
+          </div>
+          <div class="lv-bar-row">
+            <div class="lv-bar-bg"><div class="lv-bar-fill" id="statusExpBar" style="width:0%"></div></div>
+            <div class="lv-pct" id="statusExpPct">0%</div>
+          </div>
+          <div class="exp-text"><span id="statusExpText">0 / 100</span> EXP</div>
+        </div>
+        <div class="status-card">
+          <div class="label">お金</div>
+          <div class="value"><img class="icon-img lg" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"><span id="statusMoney">0</span></div>
+          <div class="status-date" id="statusDateText">----/--/--</div>
+        </div>
+      </div>
+      <div class="avatar-stage" id="avatarStage">
+        <div class="avatar-name" id="avatarName">プレイヤー</div>
+        <div class="avatar-lv" id="avatarLv">Lv.1</div>
+      </div>
+      <div class="inv-wrap">
+        <div class="inv-title">★ もちもの ★</div>
+        <div class="inv-grid" id="invGrid"></div>
+        <div id="useWrap"></div>
+      </div>
+      <div class="trade-wrap" id="tradeWrap"></div>
+      <div class="gallery-wrap" id="galleryWrap"></div>
+
+    </div>
+
+    <div class="screen screen-shop hidden" id="screen-shop">
+      <div class="shop-header">
+        <div class="shop-title">🏪 お店</div>
+        <div class="shop-money"><img class="icon-img lg" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"><span id="shopMoney">0</span></div>
+      </div>
+      <div class="shop-tabs">
+        <div class="shop-tab-btn active" data-shoptab="buy">商品購入</div>
+        <div class="shop-tab-btn" data-shoptab="gacha">ガチャ</div>
+      </div>
+      <div class="shop-panel active" id="panel-buy">
+        <div class="shop-section-title">✦ おすすめ商品</div>
+        <div id="shopList"></div>
+      </div>
+      <div class="shop-panel" id="panel-gacha">
+        <div class="gacha-box">
+          <img class="gacha-emoji" data-icon="gacha" data-fb="🎰" src="image/assets/scene_gachamachine.png" alt="ガチャ">
+          <div class="gacha-desc">レアなアイテムをゲット！</div>
+          <div class="gacha-cost">1回 <img class="icon-img lg" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"> <span id="gachaCostText">300</span></div>
+          <button class="gacha-btn" id="gachaBtn">ガチャを回す</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /.app-body -->
+
+  <div class="navbar">
+    <div class="nav-btn active" data-tab="main" role="button" aria-label="メイン" title="メイン">
+      <img class="nav-img" data-icon="navHome" data-fb="🏠" src="image/assets/icon_nav_home.png" alt="メイン">
+    </div>
+    <div class="nav-btn" data-tab="status" role="button" aria-label="ステータス" title="ステータス">
+      <img class="nav-img" data-icon="navStatus" data-fb="📊" src="image/assets/icon_nav_status.png" alt="ステータス">
+    </div>
+    <div class="nav-btn" data-tab="shop" role="button" aria-label="お店" title="お店">
+      <img class="nav-img" data-icon="navShop" data-fb="🏪" src="image/assets/icon_nav_shop.png" alt="お店">
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-back" id="gachaModal">
+  <div class="modal-box">
+    <div class="big-icon" id="modalIcon">🎁</div>
+    <div class="rarity" id="modalRarity">RARE</div>
+    <div class="name" id="modalName">アイテム名</div>
+    <button class="close-btn" id="modalClose">とじる</button>
+  </div>
+</div>
+
+<div class="img-modal" id="imgModal">
+  <img id="imgModalPic" alt="">
+  <div class="cap" id="imgModalCap">Lv.1</div>
+  <div class="hint">画面をタップでとじる</div>
+</div>
+
+<script>
+
+/* ==========================================================
+   ▼ だれの画面かは「ファイル名」で自動判定します
+      yuika_app.html → yuika（ゆいか）
+      touri_app.html → touri（とうり）
+      2人分まったく同じ中身でOKです
+   ▼ タイルのあつかい
+      日々タイル      … 子ごとに独立（内容も進捗も別）
+      通常・特別タイル … 内容は共通（両方に同じものが出る）
+                         画像だけは子ごとに別々に設定できる
+                         進捗（申請中・達成済み）は子ごとに独立
+   ▼ 保存先
+      Firebase Realtime Database（即時同期）
+      + localStorage（オフライン用キャッシュ）
+   ========================================================== */
+function detectAppId(){
+  const file = decodeURIComponent((location.pathname.split('/').pop() || '').trim());
+  const m = file.match(/^(.+?)_app\.html?$/i);
+  return (m && m[1]) ? m[1] : 'yuika';
+}
+const NAME_MAP = { yuika:'ゆいか', touri:'とうり' };
+const APP_ID   = detectAppId();
+const APP_NAME = NAME_MAP[APP_ID]
+  || (()=>{ const m = APP_ID.match(/^user(\d+)$/i); return m ? ('プレイヤー'+m[1]) : APP_ID; })();
+
+const REG_KEY    = 'lifequest_profiles_v1';
+const DB_PREFIX  = 'lifequest_db_v1_';
+const DB_KEY     = DB_PREFIX + APP_ID;
+const SHARED_KEY = 'lifequest_shared_tiles_v1';   /* 通常・特別タイルの共通定義 */
+
+/* ==========================================================
+   ★ 保存そう（localStorage 互換のシム）
+     ・cache … いま画面が見ているデータ（文字列JSON）
+     ・set   … cache と localStorage をすぐ更新し、Firebase へは少し遅らせて送る
+     ・下の module スクリプトが writer / applyRemote をつなぎます
+   ========================================================== */
+const LQSTORE = (function(){
+  const K = { reg:REG_KEY, shared:SHARED_KEY, prefix:DB_PREFIX };
+  const cache = Object.create(null);
+  const mine = k => k === K.reg || k === K.shared || k.indexOf(K.prefix) === 0;
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && mine(k)) cache[k] = localStorage.getItem(k);
+    }
+  }catch(e){}
+
+  let writer = null, timer = null, queue = Object.create(null);
+  function flush(){
+    timer = null;
+    const q = queue; queue = Object.create(null);
+    if(writer){ try{ writer(q); }catch(e){ console.error(e); } }
+  }
+  return {
+    K, cache,
+    get(k){ return (k in cache) ? cache[k] : null; },
+    set(k, v){
+      cache[k] = v;
+      try{ localStorage.setItem(k, v); }catch(e){}
+      queue[k] = v;
+      if(!timer) timer = setTimeout(flush, 200);
+      return true;
+    },
+    keys(){ return Object.keys(cache); },
+    setWriter(fn){ writer = fn; },
+    /* サーバー（または別タブ）からの反映。変化があれば true */
+    applyRemote(k, v){
+      if(!mine(k)) return false;
+      if(v === null || v === undefined){
+        if(!(k in cache)) return false;
+        delete cache[k];
+        try{ localStorage.removeItem(k); }catch(e){}
+        return true;
+      }
+      if(cache[k] === v) return false;
+      cache[k] = v;
+      try{ localStorage.setItem(k, v); }catch(e){}
+      return true;
+    }
+  };
+})();
+window.LQSTORE = LQSTORE;
+
+/* ▼ 画像フォルダ */
+const IMG      = 'image/';
+const A        = IMG + 'assets/';   /* アイコン・背景など素材 */
+const TILE_DIR = IMG + 'tile/';     /* タイル画像 */
+const LV_DIR   = IMG + 'lv/';       /* レベル別キャラ画像 yuika_01.png ... */
+
+const DEFAULT_ICONS = {
+  coin      : A + 'coin.gif',
+  star      : A + 'star.gif',
+  gacha     : A + 'scene_gachamachine.png',
+  navHome   : A + 'icon_nav_home.png',
+  navStatus : A + 'icon_nav_status.png',
+  navShop   : A + 'icon_nav_shop.png',
+  character : A + 'scene_character.png',
+  bgRoom    : A + 'bg_room.png'
+};
+const DEFAULT_ICON_SIZE = {
+  sm:16, lg:22, status:28, money:34, reward:14,
+  tile:58, inv:26, shop:30, use:22, nav:26, gacha:110
+};
+
+const KIND_META = {
+  daily  :{label:'日々', title:'☀ 日々のタイル', note:'毎日24時にリセット'},
+  normal :{label:'通常', title:'◆ 通常タイル',   note:'達成すると翌日に消えます'},
+  special:{label:'特別', title:'★ 特別タイル',   note:'達成すると翌日に消えます'}
+};
+const KIND_ORDER   = ['daily','normal','special'];
+const SHARED_KINDS = ['normal','special'];
+const isSharedKind = k => SHARED_KINDS.indexOf(k) >= 0;
+
+const $ = id => document.getElementById(id);
+const num = (v,d=0)=>{ const n = Number(v); return isNaN(n) ? d : n; };
+const hasOwn = (o,k)=> Object.prototype.hasOwnProperty.call(o||{}, k);
+function setText(id, v){ const el = $(id); if(el) el.textContent = v; }
+function escapeHTML(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function isImagePath(icon){
+  return typeof icon === 'string' && (icon.startsWith('data:') || /\.(png|jpe?g|gif|webp|svg)$/i.test(icon));
+}
+/* 素材パス：ファイル名だけなら image/assets/ に、旧 assets/ も自動変換 */
+function fixAsset(v){
+  if(typeof v !== 'string') return v;
+  v = v.trim();
+  if(!v || v.startsWith('data:') || /^(https?:|\/\/|\/)/.test(v)) return v;
+  if(!isImagePath(v)) return v;                       /* 絵文字はそのまま */
+  if(/^assets\//.test(v)) return IMG + v;
+  if(v.indexOf('/') < 0) return A + v;
+  return v;
+}
+/* タイル画像：ファイル名だけなら image/tile/ に、旧 assets/tile_ も自動変換 */
+function fixTile(v){
+  if(typeof v !== 'string') return '';
+  v = v.trim();
+  if(!v || v.startsWith('data:') || /^(https?:|\/\/|\/)/.test(v)) return v;
+  const base = v.split('/').pop();
+  if(v.indexOf('/') < 0) return TILE_DIR + base;
+  if(/^(image\/)?assets\/tile_/i.test(v)) return TILE_DIR + base;
+  return v;
+}
+
+/* ==========================================================
+   画像フォールバック
+   ========================================================== */
+const brokenSrc = new Set();
+let rerenderTimer = null;
+function scheduleRender(){ clearTimeout(rerenderTimer); rerenderTimer = setTimeout(()=>renderAll(), 60); }
+document.addEventListener('error', e=>{
+  const el = e.target;
+  if(!el || el.tagName !== 'IMG') return;
+  const src = el.getAttribute('src') || '';
+  if(src) brokenSrc.add(src);
+  if(el.id === 'imgModalPic') return;
+  if(el.classList.contains('lv-gallery-img')){
+    if(src) lvImgCache[src] = false;
+    const cell = el.closest('.lv-cell');
+    if(cell) cell.remove();
+    galleryKey = '';
+    checkGalleryEmpty();
+    return;
+  }
+
+  if(el.classList.contains('tile-card-img')){ scheduleRender(); return; }
+  const span = document.createElement('span');
+  let cls = el.className || '';
+  cls = /\bri\b/.test(cls) ? cls.replace(/\bri\b/,'ri-e') : (cls + ' icon-fb').trim();
+  span.className = cls;
+  span.textContent = el.dataset.fb || '▫️';
+  if(el.dataset.icon) span.dataset.icon = el.dataset.icon;
+  el.replaceWith(span);
+}, true);
+
+/* ==========================================================
+   ★ GIFを停止させる（1コマ目だけをPNGにする）
+   ========================================================== */
+const frozenCache = {};
+function freezeSrc(src, cb){
+  if(!src){ cb(false); return; }
+  if(frozenCache[src] !== undefined){ cb(frozenCache[src]); return; }
+  const im = new Image();
+  im.onload = ()=>{
+    try{
+      const c = document.createElement('canvas');
+      c.width  = im.naturalWidth  || 32;
+      c.height = im.naturalHeight || 32;
+      c.getContext('2d').drawImage(im, 0, 0);
+      frozenCache[src] = c.toDataURL('image/png');
+    }catch(err){ frozenCache[src] = false; }
+    cb(frozenCache[src]);
+  };
+  im.onerror = ()=>{ frozenCache[src] = false; cb(false); };
+  im.src = src;
+}
+function applyFreeze(){
+  document.querySelectorAll('img[data-freeze]:not([data-frozen])').forEach(el=>{
+    const src = el.getAttribute('data-freeze');
+    el.setAttribute('data-frozen','1');
+    freezeSrc(src, out=>{ if(out && el.isConnected) el.src = out; });
+  });
+}
+
+function renderIcon(icon, cls, fb){
+  const c = cls || 's-inv';
+  const back = fb || '▫️';
+  if(isImagePath(icon)){
+    if(brokenSrc.has(icon)) return `<span class="ri-e ${c}">${back}</span>`;
+    return `<img class="ri ${c}" src="${escapeHTML(icon)}" data-fb="${escapeHTML(back)}" alt="">`;
+  }
+  return `<span class="ri-e ${c}">${escapeHTML(icon || back)}</span>`;
+}
+function miniIcon(src, fb, cls, freeze){
+  const c = cls || '';
+  if(src && !brokenSrc.has(src)){
+    if(freeze){
+      if(frozenCache[src]) return `<img class="${c}" src="${escapeHTML(frozenCache[src])}" data-fb="${fb}" alt="">`;
+      return `<img class="${c}" src="${escapeHTML(src)}" data-freeze="${escapeHTML(src)}" data-fb="${fb}" alt="">`;
+    }
+    return `<img class="${c}" src="${escapeHTML(src)}" data-fb="${fb}" alt="">`;
+  }
+  return `<span class="${c} icon-fb">${fb}</span>`;
+}
+
+/* ==========================================================
+   データ
+   ========================================================== */
+function defaultDB(){
+  return {
+    profileName: APP_NAME,
+    player:{ name:APP_NAME, level:1, exp:0, expToNext:100, money:0 },
+    message:'',
+    lastResetDate: new Date().toDateString(),
+    icons: Object.assign({}, DEFAULT_ICONS),
+    iconSize: Object.assign({}, DEFAULT_ICON_SIZE),
+    tiles:[],
+    sharedSnap:{},
+    shopItems:[],
+    gacha:{ cost:300, pool:[] },
+    inventory:[],
+    useRequests:[],
+    useHistory:[],
+    notify:[],
+    logs:[]
+  };
+}
+
+
+let lastRaw       = LQSTORE.get(DB_KEY);
+let lastSharedRaw = LQSTORE.get(SHARED_KEY);
+
+/* ===== 共通タイル置き場 ===== */
+function loadShared(){
+  let s = null;
+  try{ s = JSON.parse(LQSTORE.get(SHARED_KEY) || 'null'); }catch(e){ s = null; }
+  if(!s || typeof s !== 'object') s = {};
+  if(!s.tiles || typeof s.tiles !== 'object') s.tiles = {};
+  if(!Array.isArray(s.order)) s.order = [];
+  return s;
+}
+function saveShared(s){
+  try{
+    const raw = JSON.stringify(s);
+    LQSTORE.set(SHARED_KEY, raw);
+    lastSharedRaw = raw;
+    return true;
+  }catch(e){ return false; }
+}
+function tileDef(t){
+  return {
+    kind: t.kind,
+    label: String(t.label==null?'':t.label),
+    rewardExp: num(t.rewardExp,0),
+    rewardMoney: num(t.rewardMoney,0),
+    icon: t.icon || '',
+    cardImage: t.cardImage || ''
+  };
+}
+
+/* 通常・特別タイルの「内容」を2人で共通化する（進捗はさわらない）
+   ・名前／けいけんち／おかね／しゅるい … 共通（片方で直すと両方に反映）
+   ・icon／cardImage                    … 子ごとに別々（それぞれ設定できる）
+   ・completed／pending／archived        … 子ごとに独立（同期しない）      */
+function syncSharedTiles(d){
+  const sh = loadShared();
+  let dChanged = false, sChanged = false;
+  if(!d.sharedSnap || typeof d.sharedSnap !== 'object'){ d.sharedSnap = {}; dChanged = true; }
+  const snap = d.sharedSnap;
+
+  const mine = {};
+  d.tiles.forEach(t=>{ if(isSharedKind(t.kind)) mine[t.id] = t; });
+  const drop = {};
+
+  /* 1) 自分の変更を共有へ／共有の変更を自分へ */
+  Object.keys(mine).forEach(id=>{
+    const t = mine[id], cur = tileDef(t), old = snap[id];
+    let s = sh.tiles[id];
+
+    if(s && s.deleted){                       /* 別の画面で消された */
+      drop[id] = 1; delete snap[id]; dChanged = true; return;
+    }
+    if(!s){
+      if(old){ drop[id] = 1; delete snap[id]; dChanged = true; return; }
+      s = sh.tiles[id] = {
+        id:id, kind:cur.kind, label:cur.label,
+        rewardExp:cur.rewardExp, rewardMoney:cur.rewardMoney,
+        icon:cur.icon, cardImage:cur.cardImage, imgBy:{}, deleted:false
+      };
+      if(sh.order.indexOf(id) < 0) sh.order.push(id);
+      sChanged = true; snap[id] = cur; dChanged = true; return;
+    }
+    if(!s.imgBy || typeof s.imgBy !== 'object') s.imgBy = {};
+    const ov = s.imgBy[APP_ID] || (s.imgBy[APP_ID] = {});
+
+    ['kind','label','rewardExp','rewardMoney'].forEach(k=>{
+      if(old && cur[k] !== old[k]){
+        if(s[k] !== cur[k]){ s[k] = cur[k]; sChanged = true; }
+      }else{
+        let sv = s[k];
+        if(k === 'kind' && !isSharedKind(sv)) return;
+        if(t[k] !== sv){ t[k] = sv; dChanged = true; }
+      }
+    });
+    ['icon','cardImage'].forEach(k=>{
+      const shown = hasOwn(ov,k) ? (ov[k]||'') : (s[k]||'');
+      if(old && cur[k] !== old[k]){
+        if(ov[k] !== cur[k]){ ov[k] = cur[k]; sChanged = true; }
+      }else if((t[k]||'') !== shown){
+        t[k] = shown; dChanged = true;
+      }
+    });
+    snap[id] = tileDef(t);
+  });
+
+  /* 2) この画面で消されたものを共有にも反映 */
+  Object.keys(snap).forEach(id=>{
+    if(mine[id] || drop[id]) return;
+    if(sh.tiles[id] && !sh.tiles[id].deleted){ sh.tiles[id].deleted = true; sChanged = true; }
+    delete snap[id]; dChanged = true;
+  });
+
+  /* 3) 共有にあって自分に無いものを追加（進捗はまっさらから） */
+  sh.order.forEach(id=>{
+    const s = sh.tiles[id];
+    if(!s || s.deleted || mine[id] || drop[id]) return;
+    const ov = (s.imgBy && s.imgBy[APP_ID]) || {};
+    const t = {
+      id: id,
+      kind: isSharedKind(s.kind) ? s.kind : 'normal',
+      label: s.label || 'タイル',
+      rewardExp: num(s.rewardExp,0),
+      rewardMoney: num(s.rewardMoney,0),
+      icon: hasOwn(ov,'icon') ? (ov.icon||'') : (s.icon||''),
+      cardImage: hasOwn(ov,'cardImage') ? (ov.cardImage||'') : (s.cardImage||''),
+      completed:false, pending:false, archived:false
+    };
+    d.tiles.push(t);
+    snap[id] = tileDef(t);
+    dChanged = true;
+  });
+
+  if(Object.keys(drop).length){
+    d.tiles = d.tiles.filter(t=>!drop[t.id]);
+    dChanged = true;
+  }
+  if(sChanged) saveShared(sh);
+  return dChanged;
+}
+
+function applyDayRollover(d){
+  const today = new Date().toDateString();
+  if(d.lastResetDate === today) return false;
+  d.tiles.forEach(t=>{
+    if(t.kind === 'daily'){ t.completed = false; t.pending = false; }
+    else if(t.completed){ t.archived = true; }
+  });
+  d.lastResetDate = today;
+  return true;
+}
+
+function loadDB(){
+  const raw = LQSTORE.get(DB_KEY);
+  let d, dirty = false;
+  if(!raw){ d = defaultDB(); dirty = true; }
+  else{
+    try{ d = JSON.parse(raw); }catch(e){ d = defaultDB(); dirty = true; }
+  }
+  if(!d || typeof d !== 'object'){ d = defaultDB(); dirty = true; }
+
+  if(!Array.isArray(d.tiles)){ d.tiles = []; dirty = true; }
+  if(!Array.isArray(d.shopItems)){ d.shopItems = []; dirty = true; }
+  if(!d.gacha || !Array.isArray(d.gacha.pool)){ d.gacha = {cost:(d.gacha&&num(d.gacha.cost,300))||300, pool:[]}; dirty = true; }
+  if(!Array.isArray(d.inventory)){ d.inventory = []; dirty = true; }
+  if(!Array.isArray(d.useRequests)){ d.useRequests = []; dirty = true; }
+  if(!Array.isArray(d.useHistory)){ d.useHistory = []; dirty = true; }
+  if(!Array.isArray(d.notify)){ d.notify = []; dirty = true; }
+  if(!Array.isArray(d.logs)){ d.logs = []; dirty = true; }
+
+  /* メッセージ（旧 msg キーも取り込む） */
+  if(typeof d.message !== 'string'){
+    d.message = (typeof d.msg === 'string') ? d.msg : '';
+    dirty = true;
+  }
+
+  if(!d.icons || typeof d.icons !== 'object'){ d.icons = {}; dirty = true; }
+  Object.keys(DEFAULT_ICONS).forEach(k=>{
+    if(typeof d.icons[k] !== 'string' || !d.icons[k]){ d.icons[k] = DEFAULT_ICONS[k]; dirty = true; }
+    const fixed = fixAsset(d.icons[k]);
+    if(fixed !== d.icons[k]){ d.icons[k] = fixed; dirty = true; }
+  });
+  if(!d.iconSize || typeof d.iconSize !== 'object'){ d.iconSize = {}; dirty = true; }
+  Object.keys(DEFAULT_ICON_SIZE).forEach(k=>{
+    if(!(num(d.iconSize[k],0) > 0)){ d.iconSize[k] = DEFAULT_ICON_SIZE[k]; dirty = true; }
+  });
+
+  d.tiles = d.tiles.filter(t=>t && typeof t === 'object');
+  d.tiles.forEach(t=>{
+    if(!t.id){ t.id = 'tile_' + Math.random().toString(36).slice(2,9); dirty = true; }
+    if(!t.kind){ t.kind = (t.type === 'clear') ? 'special' : 'daily'; dirty = true; }
+    if(!KIND_META[t.kind]){ t.kind = 'daily'; dirty = true; }
+    if(typeof t.label !== 'string'){ t.label = 'タイル'; dirty = true; }
+    if(typeof t.archived !== 'boolean'){ t.archived = false; dirty = true; }
+    if(typeof t.completed !== 'boolean'){ t.completed = false; dirty = true; }
+    if(typeof t.pending !== 'boolean'){ t.pending = false; dirty = true; }
+    t.rewardExp   = Math.max(0, num(t.rewardExp,0));
+    t.rewardMoney = Math.max(0, num(t.rewardMoney,0));
+    const c = fixTile(t.cardImage || '');
+    if(c !== (t.cardImage||'')){ t.cardImage = c; dirty = true; }
+    if(isImagePath(t.icon)){
+      const ic = fixAsset(t.icon);
+      if(ic !== t.icon){ t.icon = ic; dirty = true; }
+    }
+  });
+
+  /* ★ 通常・特別タイルの内容だけを2人で共通化 */
+  if(syncSharedTiles(d)) dirty = true;
+
+  d.shopItems.forEach(s=>{
+    if(isImagePath(s.icon)){ const v = fixAsset(s.icon); if(v!==s.icon){ s.icon = v; dirty = true; } }
+  });
+  d.gacha.pool.forEach(g=>{
+    if(isImagePath(g.icon)){ const v = fixAsset(g.icon); if(v!==g.icon){ g.icon = v; dirty = true; } }
+  });
+
+  if(!d.player || typeof d.player !== 'object'){ d.player = defaultDB().player; dirty = true; }
+  if(typeof d.player.name !== 'string' || !d.player.name.trim()){ d.player.name = APP_NAME; dirty = true; }
+  if(NAME_MAP[APP_ID] && d.player.name === APP_ID){ d.player.name = NAME_MAP[APP_ID]; dirty = true; }
+  d.player.level     = Math.max(1, num(d.player.level,1));
+  d.player.exp       = Math.max(0, num(d.player.exp,0));
+  d.player.expToNext = Math.max(1, num(d.player.expToNext,100));
+  d.player.money     = Math.max(0, num(d.player.money,0));
+  if(d.profileName !== d.player.name){ d.profileName = d.player.name; dirty = true; }
+
+  if(applyDayRollover(d)) dirty = true;
+  if(dirty) saveDB(d);
+  return d;
+}
+function saveDB(d){
+  try{
+    const raw = JSON.stringify(d);
+    LQSTORE.set(DB_KEY, raw);
+    lastRaw = raw;
+    return true;
+  }catch(e){ toast('ほぞんできませんでした'); return false; }
+}
+
+let db = loadDB();
+
+function registerProfile(name){
+  let list = [];
+  try{ list = JSON.parse(LQSTORE.get(REG_KEY)) || []; }catch(e){ list = []; }
+  if(!Array.isArray(list)) list = [];
+  const found = list.find(p=>p && p.id===APP_ID);
+  if(found){
+    if(name && found.name !== name){ found.name = name; LQSTORE.set(REG_KEY, JSON.stringify(list)); }
+  }else{
+    list.push({id:APP_ID, name:name || APP_NAME});
+    LQSTORE.set(REG_KEY, JSON.stringify(list));
+  }
+}
+registerProfile(db.player.name);
+
+const iCoin = ()=> db.icons.coin;
+const iStar = ()=> db.icons.star;
+const myName = ()=> (db.player.name || APP_NAME);
+
+function todayLabel(){
+  const d = new Date();
+  const w = ['日','月','火','水','木','金','土'][d.getDay()];
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${w}）`;
+}
+function toast(msg){
+  const el = $('toast');
+  if(!el) return;
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 2000);
+}
+
+/* ==========================================================
+   ★ レベル別キャラ画像（image/lv/yuika_01.png など）
+   ========================================================== */
+const lvImgCache = {};
+let curLvBg = '', lvProbedFor = null;
+function lvImgPath(lv){ return LV_DIR + APP_ID + '_' + String(lv).padStart(2,'0') + '.png'; }
+function applyCharacterBg(){
+  const src = curLvBg || db.icons.character;
+  document.documentElement.style.setProperty('--bg-character',
+    (src && !brokenSrc.has(src)) ? `url("${src}")` : 'none');
+}
+function resolveLevelImage(){
+  const lv = db.player.level;
+  if(lvProbedFor === lv) return;
+  lvProbedFor = lv;
+  const list = [];
+  for(let i=lv; i>=1; i--) list.push(lvImgPath(i));
+  (function step(k){
+    if(k >= list.length){ curLvBg = ''; applyCharacterBg(); return; }
+    const p = list[k];
+    if(lvImgCache[p] === true){ curLvBg = p; applyCharacterBg(); return; }
+    if(lvImgCache[p] === false){ step(k+1); return; }
+    const im = new Image();
+    im.onload  = ()=>{ lvImgCache[p] = true;  curLvBg = p; applyCharacterBg(); };
+    im.onerror = ()=>{ lvImgCache[p] = false; step(k+1); };
+    im.src = p;
+  })(0);
+}
+/* ==========================================================
+   ★ レベルコレクション（image/lv/APP_ID_01.png …）
+      現在のレベル以下だけを表示・タップで拡大
+   ========================================================== */
+let galleryKey = '';
+function galleryList(){
+  const lv = Math.max(1, num(db.player.level,1));
+  const out = [];
+  for(let i=1; i<=lv; i++){
+    const p = lvImgPath(i);
+    if(lvImgCache[p] === false) continue;   /* 無い画像は出さない */
+    out.push({lv:i, src:p});
+  }
+  return out;
+}
+function checkGalleryEmpty(){
+  const grid = $('lvGrid');
+  if(!grid) return;
+  if(!grid.querySelector('.lv-cell') && !grid.querySelector('.gallery-empty')){
+    grid.insertAdjacentHTML('beforeend','<div class="gallery-empty">まだ画像がありません</div>');
+  }
+}
+function openLvImage(src, lv){
+  const m = $('imgModal');
+  if(!m) return;
+  const pic = $('imgModalPic');
+  if(pic) pic.src = src;
+  setText('imgModalCap', 'Lv.' + lv);
+  m.classList.add('show');
+}
+function renderGallery(force){
+  const wrap = $('galleryWrap');
+  if(!wrap) return;
+  const list = galleryList();
+  const key  = db.player.level + '|' + list.map(o=>o.lv).join(',');
+  if(!force && key === galleryKey && wrap.querySelector('#lvGrid')) return;
+  galleryKey = key;
+
+  wrap.innerHTML = '<div class="gallery-title">★ レベルコレクション ★</div>'
+    + '<div class="lv-grid" id="lvGrid">'
+    + (list.length ? list.map(o=>`
+        <div class="lv-cell" role="button" tabindex="0" data-lv="${o.lv}" data-src="${escapeHTML(o.src)}" title="Lv.${o.lv}">
+          <img class="lv-gallery-img" src="${escapeHTML(o.src)}" alt="Lv.${o.lv}">
+          <div class="lv-cap">Lv.${o.lv}</div>
+        </div>`).join('')
+      : '<div class="gallery-empty">まだ画像がありません</div>')
+    + '</div>';
+
+  wrap.querySelectorAll('.lv-cell').forEach(cell=>{
+    const open = ()=>openLvImage(cell.dataset.src, cell.dataset.lv);
+    cell.onclick = open;
+    cell.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } };
+  });
+  wrap.querySelectorAll('.lv-gallery-img').forEach(im=>{
+    im.addEventListener('load', ()=>{ lvImgCache[im.getAttribute('src')] = true; });
+  });
+}
+/* ===== 画像・サイズをCSSへ反映 ===== */
+function applyLook(){
+  const ic = db.icons, sz = db.iconSize, r = document.documentElement.style;
+  Object.keys(DEFAULT_ICON_SIZE).forEach(k=>{
+    r.setProperty('--ic-'+k, num(sz[k], DEFAULT_ICON_SIZE[k]) + 'px');
+  });
+  r.setProperty('--bg-room', (ic.bgRoom && !brokenSrc.has(ic.bgRoom)) ? `url("${ic.bgRoom}")` : 'none');
+  applyCharacterBg();
+  document.querySelectorAll('[data-icon]').forEach(el=>{
+    if(el.tagName !== 'IMG') return;
+    const v = ic[el.dataset.icon];
+    if(v && !brokenSrc.has(v) && el.getAttribute('src') !== v) el.src = v;
+  });
+}
+
+/* ===== メッセージ ===== */
+function renderMsg(){
+  const box = $('msgBox'), body = $('msgBody');
+  if(!box || !body) return;
+  const txt = (typeof db.message === 'string') ? db.message.trim() : '';
+  if(txt){ body.textContent = txt; box.hidden = false; }
+  else{ body.textContent = ''; box.hidden = true; }
+}
+
+function renderTop(){
+  setText('lvText', db.player.level);
+  setText('playerNameText', myName());
+  setText('dateText', todayLabel());
+  setText('moneyText', db.player.money.toLocaleString());
+  const pct = Math.min(100, Math.round(db.player.exp/db.player.expToNext*100));
+  const bar = $('expBar'); if(bar) bar.style.width = pct+'%';
+  setText('expPct', pct+'%');
+}
+
+function requestTile(t){
+  if(t.completed){ toast('もう達成ずみ！'); return; }
+  if(t.pending){
+    t.pending = false; saveDB(db);
+    toast(`「${t.label}」の申請をキャンセルしました`); renderAll(); return;
+  }
+  t.pending = true; saveDB(db);
+  toast(`「${t.label}」を申請しました！かんりしゃの承認を待とう`); renderAll();
+}
+
+function buildTile(t){
+  const useCard = !!t.cardImage && !brokenSrc.has(t.cardImage);
+  const div = document.createElement('div');
+  div.className = 'tile ' + t.kind
+    + (t.completed?' done':'')
+    + (!t.completed && t.pending?' pending':'')
+    + (useCard?' has-card':'');
+  div.setAttribute('role','button');
+  div.tabIndex = 0;
+  const rewardHTML = `
+    <div class="tile-reward">
+      <span>${miniIcon(iStar(),'⭐','',true)}${t.rewardExp}</span>
+      <span>${miniIcon(iCoin(),'🪙','',true)}${t.rewardMoney}</span>
+    </div>`;
+  const sparkHTML = (t.kind==='special')
+    ? '<div class="sp-surface"></div><div class="sp-stars"><i></i><i></i><i></i><i></i><i></i></div>' : '';
+  if(useCard){
+    div.innerHTML = `<img class="tile-card-img" src="${escapeHTML(t.cardImage)}" alt="${escapeHTML(t.label)}">`
+      + sparkHTML + rewardHTML
+      + `<div class="tile-name-bar">${escapeHTML(t.label)}</div>`;
+  }else{
+    div.innerHTML = sparkHTML + rewardHTML
+      + `<div class="tile-icon">${renderIcon(t.icon,'s-tile','🧩')}</div>`
+      + `<div class="tile-label">${escapeHTML(t.label)}</div>`;
+  }
+  div.title = t.label;
+  div.onclick = ()=>requestTile(t);
+  div.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); requestTile(t); } };
+  return div;
+}
+
+function renderTiles(){
+  const wrap = $('tileSections');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  KIND_ORDER.forEach(kind=>{
+    const list = db.tiles.filter(t=>t.kind===kind && !t.archived);
+    const meta = KIND_META[kind];
+    const h = document.createElement('div');
+    h.className = 'sec-title';
+    h.innerHTML = `<span>${meta.title}</span><span class="sec-note">${meta.note}</span>`;
+    wrap.appendChild(h);
+    if(list.length===0){
+      const e = document.createElement('div');
+      e.className = 'sec-empty';
+      e.textContent = (kind==='daily') ? 'タイルがありません' : '今はありません';
+      wrap.appendChild(e);
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.className = 'tile-grid';
+    list.forEach(t=>grid.appendChild(buildTile(t)));
+    wrap.appendChild(grid);
+  });
+}
+
+/* ==========================================================
+   もちもの・受け渡し
+   ========================================================== */
+function otherProfiles(){
+  const out = [], seen = {};
+  let list = [];
+  try{ list = JSON.parse(LQSTORE.get(REG_KEY)) || []; }catch(e){ list = []; }
+  if(!Array.isArray(list)) list = [];
+  list.forEach(p=>{
+    if(p && p.id && p.id !== APP_ID && !seen[p.id]){ seen[p.id]=1; out.push({id:p.id, name:p.name||p.id}); }
+  });
+  LQSTORE.keys().forEach(k=>{
+    if(k.indexOf(DB_PREFIX)===0){
+      const id = k.slice(DB_PREFIX.length);
+      if(id !== APP_ID && !seen[id]){
+        seen[id]=1;
+        let nm = NAME_MAP[id] || id;
+        try{ const o = JSON.parse(LQSTORE.get(k)); if(o && o.player && o.player.name) nm = o.player.name; }catch(e){}
+        out.push({id, name:nm});
+      }
+    }
+  });
+  return out;
+}
+
+const tradeSel = {item:'', to:'', qty:1};
+
+function renderTrade(){
+  const wrap = $('tradeWrap');
+  if(!wrap) return;
+  const others = otherProfiles();
+  const head = '<div class="trade-title">🔁 アイテムをおくる</div>';
+  if(!others.length){
+    wrap.innerHTML = head + '<div class="trade-empty">おくれる相手がいません<br>（もうひとりの画面を1回ひらいてね）</div>';
+    return;
+  }
+  if(!db.inventory.length){
+    wrap.innerHTML = head + '<div class="trade-empty">おくれるアイテムがありません</div>';
+    return;
+  }
+  if(!db.inventory.some(i=>i.id===tradeSel.item)) tradeSel.item = db.inventory[0].id;
+  if(!others.some(o=>o.id===tradeSel.to)) tradeSel.to = others[0].id;
+  const cur = db.inventory.find(i=>i.id===tradeSel.item);
+  const maxQ = Math.max(1, num(cur && cur.qty, 1));
+  if(tradeSel.qty > maxQ) tradeSel.qty = maxQ;
+  if(tradeSel.qty < 1) tradeSel.qty = 1;
+
+  wrap.innerHTML = head + `
+    <div class="trade-row">
+      <label for="tradeItem">アイテム</label>
+      <select id="tradeItem">${db.inventory.map(i=>
+        `<option value="${escapeHTML(i.id)}"${i.id===tradeSel.item?' selected':''}>${escapeHTML(i.name)}（${num(i.qty,1)}こ）</option>`).join('')}</select>
+    </div>
+    <div class="trade-row">
+      <label for="tradeTo">おくる先</label>
+      <select id="tradeTo">${others.map(o=>
+        `<option value="${escapeHTML(o.id)}"${o.id===tradeSel.to?' selected':''}>${escapeHTML(o.name)}</option>`).join('')}</select>
+    </div>
+    <div class="trade-row">
+      <label for="tradeQty">こすう</label>
+      <input type="number" id="tradeQty" min="1" max="${maxQ}" value="${tradeSel.qty}">
+      <span style="color:#e2cfa4;font-size:11px">／ ${maxQ}こ</span>
+    </div>
+    <button class="send-btn" id="tradeSend">この子におくる</button>
+    <div class="trade-note">おくるとすぐに相手のもちものに入ります（かくにん不要）</div>`;
+
+  const selI = $('tradeItem');
+  const selT = $('tradeTo');
+  const inpQ = $('tradeQty');
+  selI.onchange = ()=>{ tradeSel.item = selI.value; tradeSel.qty = 1; renderTrade(); };
+  selT.onchange = ()=>{ tradeSel.to = selT.value; };
+  inpQ.onchange = ()=>{ tradeSel.qty = Math.max(1, Math.min(maxQ, num(inpQ.value,1))); inpQ.value = tradeSel.qty; };
+  $('tradeSend').onclick = ()=>{
+    tradeSel.qty = Math.max(1, Math.min(maxQ, num(inpQ.value,1)));
+    sendItem(selI.value, selT.value, tradeSel.qty);
+  };
+}
+
+function sendItem(invId, toId, qty){
+  const idx = db.inventory.findIndex(i=>i.id===invId);
+  if(idx < 0){ toast('アイテムが見つかりません'); return; }
+  const item = db.inventory[idx];
+  qty = Math.max(1, Math.min(num(item.qty,1), num(qty,1)));
+  const key = DB_PREFIX + toId;
+  let o = null;
+  try{ o = JSON.parse(LQSTORE.get(key) || 'null'); }catch(e){ o = null; }
+  if(!o || typeof o !== 'object'){ toast('相手のデータが見つかりません'); return; }
+
+  o.inventory = Array.isArray(o.inventory) ? o.inventory : [];
+  const ex = o.inventory.find(i=>i.refId === item.refId);
+  if(ex) ex.qty = num(ex.qty,1) + qty;
+  else o.inventory.push({id:'inv_'+item.refId+'_'+Date.now(), refId:item.refId, icon:item.icon, name:item.name, qty:qty});
+  o.logs = Array.isArray(o.logs) ? o.logs : [];
+  o.logs.unshift({ts:Date.now(), text:`${myName()}から「${item.name}」×${qty}をうけとった`});
+  o.logs = o.logs.slice(0,120);
+  o.notify = Array.isArray(o.notify) ? o.notify : [];
+  o.notify.push({at:Date.now(), text:`🎁 ${myName()}から「${item.name}」×${qty}がとどいた！`});
+  try{ LQSTORE.set(key, JSON.stringify(o)); }
+  catch(e){ toast('おくれませんでした'); return; }
+
+  item.qty = num(item.qty,1) - qty;
+  if(item.qty <= 0) db.inventory.splice(idx,1);
+  const toName = (o.player && o.player.name) ? o.player.name : (NAME_MAP[toId] || toId);
+  db.logs.unshift({ts:Date.now(), text:`「${item.name}」×${qty}を${toName}におくった`});
+  db.logs = db.logs.slice(0,120);
+  saveDB(db);
+  toast(`${toName}に「${item.name}」×${qty}をおくりました！`);
+  renderAll();
+}
+
+function renderStatus(){
+  setText('statusMoney', db.player.money.toLocaleString());
+  setText('statusDateText', todayLabel());
+  setText('statusLv', 'Lv. ' + db.player.level);
+  const pct = Math.min(100, Math.round(db.player.exp/db.player.expToNext*100));
+  const bar = $('statusExpBar'); if(bar) bar.style.width = pct+'%';
+  setText('statusExpPct', pct+'%');
+  setText('statusExpText', db.player.exp + ' / ' + db.player.expToNext);
+  setText('avatarName', myName());
+  setText('avatarLv', 'Lv.' + db.player.level);
+
+  const invGrid = $('invGrid');
+  if(invGrid){
+    invGrid.innerHTML = '';
+    if(db.inventory.length===0){
+      invGrid.innerHTML = '<div class="inv-empty">まだアイテムがありません<br>お店で購入しよう！</div>';
+    }else{
+      db.inventory.forEach(item=>{
+        const div = document.createElement('div');
+        div.className = 'inv-item';
+        div.innerHTML = `
+          <div class="inv-icon">${renderIcon(item.icon,'s-inv','🎁')}</div>
+          <div class="inv-name">${escapeHTML(item.name)}${item.qty>1?` ×${item.qty}`:''}</div>
+          <button class="use-btn">つかう</button>`;
+        div.querySelector('.use-btn').onclick = ()=>useItem(item.id);
+        invGrid.appendChild(div);
+      });
+    }
+  }
+  const uw = $('useWrap');
+  if(uw){
+    if(db.useRequests.length===0){ uw.innerHTML = ''; }
+    else{
+      uw.innerHTML = '<div class="use-sec-title">▼ 使用中（かんりしゃ確認まち）</div><div class="use-list">'
+        + db.useRequests.map(r=>`
+          <div class="use-row">
+            ${renderIcon(r.icon,'s-use','🎁')}
+            <span class="u-name">${escapeHTML(r.name)}</span>
+            <span class="u-state">使用中</span>
+          </div>`).join('')
+        + '</div>';
+    }
+  }
+  renderTrade();
+}
+
+function useItem(itemId){
+  const idx = db.inventory.findIndex(i=>i.id===itemId);
+  if(idx<0) return;
+  const item = db.inventory[idx];
+  if(item.qty<=0) return;
+  item.qty -= 1;
+  db.useRequests.push({
+    id:'use_'+Date.now()+'_'+Math.floor(Math.random()*999),
+    refId:item.refId, icon:item.icon, name:item.name,
+    at:Date.now(), status:'using'
+  });
+  if(item.qty<=0) db.inventory.splice(idx,1);
+  saveDB(db);
+  toast(`「${item.name}」を使用中にしました！かんりしゃの確認をまとう`);
+  renderAll();
+}
+
+function renderShop(){
+  setText('shopMoney', db.player.money.toLocaleString());
+  const list = $('shopList');
+  if(list){
+    list.innerHTML = '';
+    if(db.shopItems.length===0){
+      list.innerHTML = '<div class="sec-empty">商品がありません</div>';
+    }
+    db.shopItems.forEach(item=>{
+      const row = document.createElement('div');
+      row.className = 'shop-item-row';
+      row.innerHTML = `
+        <div class="shop-item-icon">${renderIcon(item.icon,'s-shop','🎁')}</div>
+        <div class="shop-item-info">
+          <div class="shop-item-name">${escapeHTML(item.name)}</div>
+          <div class="shop-item-desc">${escapeHTML(item.desc||'')}</div>
+          <div class="shop-item-price">${miniIcon(iCoin(),'🪙','icon-img lg',true)} ${num(item.price).toLocaleString()}</div>
+        </div>
+        <button class="buy-btn">購入</button>`;
+      const btn = row.querySelector('.buy-btn');
+      if(db.player.money < item.price) btn.disabled = true;
+      btn.onclick = ()=>{
+        if(db.player.money < item.price){ toast('お金が足りません！'); return; }
+        db.player.money -= item.price;
+        const existing = db.inventory.find(i=>i.refId===item.id);
+        if(existing){ existing.qty += 1; }
+        else{ db.inventory.push({id:'inv_'+item.id+'_'+Date.now(), refId:item.id, icon:item.icon, name:item.name, qty:1}); }
+        saveDB(db); toast(`「${item.name}」を購入しました！`); renderAll();
+      };
+      list.appendChild(row);
+    });
+  }
+  setText('gachaCostText', num(db.gacha.cost).toLocaleString());
+  const gb = $('gachaBtn');
+  if(gb) gb.disabled = (db.player.money < db.gacha.cost) || db.gacha.pool.length===0;
+}
+
+function pullGacha(){
+  if(db.gacha.pool.length===0){ toast('景品がありません'); return; }
+  if(db.player.money < db.gacha.cost){ toast('お金が足りません！'); return; }
+  db.player.money -= db.gacha.cost;
+  const pool = db.gacha.pool;
+  const totalWeight = pool.reduce((s,p)=>s+num(p.weight),0) || 1;
+  let r = Math.random()*totalWeight;
+  let picked = pool[pool.length-1];
+  for(const p of pool){ if(r<num(p.weight)){ picked=p; break;} r -= num(p.weight); }
+  const existing = db.inventory.find(i=>i.refId==='gacha_'+picked.id);
+  if(existing){ existing.qty += 1; }
+  else{ db.inventory.push({id:'inv_g_'+picked.id+'_'+Date.now(), refId:'gacha_'+picked.id, icon:picked.icon, name:picked.name, qty:1}); }
+  saveDB(db); showGachaResult(picked); renderAll();
+}
+
+const rarityColor = {N:'#7a7a7a', R:'#3a7bd5', SR:'#9b4fd6', SSR:'#e0a615'};
+function showGachaResult(item){
+  const ic = $('modalIcon'), ra = $('modalRarity');
+  if(ic) ic.innerHTML = renderIcon(item.icon,'s-modal','🎁');
+  if(ra){ ra.textContent = item.rarity; ra.style.color = rarityColor[item.rarity]||'#333'; }
+  setText('modalName', item.name);
+  const m = $('gachaModal'); if(m) m.classList.add('show');
+}
+$('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
+$('gachaBtn').onclick = pullGacha;
+$('imgModal').onclick = ()=>$('imgModal').classList.remove('show');
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') $('imgModal').classList.remove('show');
+});
+
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+    const sc = $('screen-'+btn.dataset.tab);
+    if(sc) sc.classList.remove('hidden');
+    $('app').classList.toggle('hide-topbar', btn.dataset.tab !== 'main');
+    $('appBody').scrollTop = 0;
+  };
+});
+document.querySelectorAll('.shop-tab-btn').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('.shop-tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.shop-panel').forEach(p=>p.classList.remove('active'));
+    const pn = $('panel-'+btn.dataset.shoptab);
+    if(pn) pn.classList.add('active');
+  };
+});
+
+/* ===== 承認・レベルアップ・プレゼントのおしらせ ===== */
+let prevLevel = null, prevDone = null;
+function notifyChanges(){
+  const doneNow = new Set(db.tiles.filter(t=>t.completed).map(t=>t.id));
+  if(prevLevel === null){ prevLevel = db.player.level; prevDone = doneNow; return; }
+  const newly = [...doneNow].filter(id=>!prevDone.has(id));
+  if(newly.length){
+    const t = db.tiles.find(x=>x.id===newly[0]);
+    if(t) toast(`「${t.label}」がしょうにんされたよ！`);
+  }
+  if(db.player.level > prevLevel){
+    const lv = db.player.level;
+    setTimeout(()=>toast(`🎉 レベルアップ！ Lv.${lv}`), newly.length ? 1200 : 0);
+    const row = $('lvRow');
+    if(row){ row.classList.add('lv-pop'); setTimeout(()=>row.classList.remove('lv-pop'), 700); }
+  }
+  prevLevel = db.player.level; prevDone = doneNow;
+}
+function consumeNotify(){
+  if(!Array.isArray(db.notify) || !db.notify.length) return;
+  const list = db.notify.slice(0,3);
+  db.notify = [];
+  saveDB(db);
+  list.forEach((n,i)=>setTimeout(()=>toast(n.text || 'アイテムがとどいた！'), 2200 + i*1600));
+}
+
+function renderAll(){
+  applyLook();
+  resolveLevelImage();
+  renderTop(); renderMsg(); renderTiles(); renderStatus(); renderShop();
+  renderGallery();
+  applyFreeze();
+}
+
+
+/* ===== 同期（かんりしゃ画面・もうひとりの操作をひろう） ===== */
+function refresh(force){
+  const raw  = LQSTORE.get(DB_KEY);
+  const sraw = LQSTORE.get(SHARED_KEY);
+  const dayChanged = db.lastResetDate !== new Date().toDateString();
+  if(!force && raw === lastRaw && sraw === lastSharedRaw && !dayChanged) return;
+  db = loadDB();
+  lastRaw       = LQSTORE.get(DB_KEY);
+  lastSharedRaw = LQSTORE.get(SHARED_KEY);
+  registerProfile(db.player.name);
+  document.title = 'せいかつクエスト｜' + myName();
+  notifyChanges();
+  consumeNotify();
+  renderAll();
+}
+window.__lqRefresh = refresh;
+window.__lqToast   = toast;
+
+window.addEventListener('focus', ()=>refresh(true));
+window.addEventListener('storage', e=>{
+  if(!e.key){ refresh(true); return; }
+  if(LQSTORE.applyRemote(e.key, e.newValue)) refresh(true);
+});
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refresh(true); });
+setInterval(()=>refresh(false), 2000);
+
+document.title = 'せいかつクエスト｜' + myName();
+notifyChanges();
+consumeNotify();
+renderAll();
+</script>
+
+<!-- ▼ Firebase の設定（リポジトリのルートに置いてください） -->
+<script src="firebase-config.js"></script>
+
+<!-- ▼ Firebase 同期レイヤー（画面の見た目・仕様には触れません） -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
+import { getAuth, signInAnonymously, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
+import { getDatabase, ref, onValue, set, update }
+  from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js';
+
+const S   = window.LQSTORE;
+const cfg = window.LQ_FIREBASE_CONFIG;
+
+if(!S){
+  console.warn('[LifeQuest] ストアが初期化されていません');
+}else if(!cfg){
+  console.warn('[LifeQuest] firebase-config.js がありません。この端末だけの保存で動作します。');
+}else{
+  const ROOT = window.LQ_ROOT || 'lifequest';
+  const app  = initializeApp(cfg);
+  const auth = getAuth(app);
+  const rdb  = getDatabase(app);
+  const K    = S.K;
+
+  /* localStorageキー ⇔ データベースのパス */
+  const pathOf = k =>
+      k === K.reg    ? 'profiles'
+    : k === K.shared ? 'shared'
+    : k.indexOf(K.prefix) === 0 ? 'kids/' + k.slice(K.prefix.length)
+    : null;
+
+  const isObj  = v => v !== null && typeof v === 'object';
+  const clone  = v => JSON.parse(JSON.stringify(v));
+  /* RTDBは空配列を消したり、配列をオブジェクトで返すことがあるので直す */
+  const toArr  = v => Array.isArray(v) ? v.filter(x=>x!=null)
+    : (isObj(v) ? Object.keys(v).sort((a,b)=>(+a)-(+b)).map(k=>v[k]).filter(x=>x!=null) : []);
+
+  const KID_ARRAYS = ['tiles','shopItems','inventory','useRequests','useHistory','notify','logs'];
+  function normKid(o){
+    o = isObj(o) ? clone(o) : {};
+    KID_ARRAYS.forEach(k=>{ o[k] = toArr(o[k]); });
+    if(isObj(o.gacha)) o.gacha.pool = toArr(o.gacha.pool);
+    return o;
+  }
+  function normShared(o){
+    o = isObj(o) ? clone(o) : {};
+    o.order = toArr(o.order);
+    if(!isObj(o.tiles) || Array.isArray(o.tiles)) o.tiles = {};
+    return o;
+  }
+
+  /* サーバー側の中身の控え（差分書き込みに使う） */
+  const mirror = Object.create(null);
+  let ready = false;
+
+  /* 変わったところだけ path→value に展開（消えたものは null） */
+  function diff(a, b, base, out){
+    const ka = isObj(a) ? Object.keys(a) : [];
+    const kb = isObj(b) ? Object.keys(b) : [];
+    new Set(ka.concat(kb)).forEach(k=>{
+      const p  = base ? base + '/' + k : k;
+      const av = isObj(a) ? a[k] : undefined;
+      const bv = isObj(b) ? b[k] : undefined;
+      if(bv === undefined || bv === null){
+        if(av !== undefined && av !== null) out[p] = null;
+        return;
+      }
+      if(isObj(av) && isObj(bv) && Array.isArray(av) === Array.isArray(bv)){
+        diff(av, bv, p, out); return;
+      }
+      if(JSON.stringify(av) !== JSON.stringify(bv)) out[p] = bv;
+    });
+  }
+
+  function push(key, json){
+    const p = pathOf(key);
+    if(!p || json == null) return;
+    let next;
+    try{ next = JSON.parse(json); }catch(e){ return; }
+    const prev = mirror[key];
+    const node = ref(rdb, ROOT + '/' + p);
+    try{
+      if(prev === undefined){
+        set(node, next);
+      }else{
+        const ups = {};
+        diff(prev, next, '', ups);
+        if(!Object.keys(ups).length) return;
+        update(node, ups);
+      }
+      mirror[key] = clone(next);
+    }catch(e){ console.error('[LifeQuest] 書き込み失敗', e); }
+  }
+
+  S.setWriter(q=>{
+    if(!ready) return;            /* 最初の受信までは送らない（初期値で上書きしないため） */
+    Object.keys(q).forEach(k=>push(k, q[k]));
+  });
+
+  function applySnap(val){
+    val = isObj(val) ? val : {};
+    let changed = false;
+    const put = (key, obj)=>{
+      mirror[key] = clone(obj);
+      if(S.applyRemote(key, JSON.stringify(obj))) changed = true;
+    };
+    if(val.profiles !== undefined) put(K.reg,    toArr(val.profiles));
+    if(val.shared   !== undefined) put(K.shared, normShared(val.shared));
+    const kids = isObj(val.kids) ? val.kids : {};
+    Object.keys(kids).forEach(id=> put(K.prefix + id, normKid(kids[id])));
+    return changed;
+  }
+
+  let started = false;
+  function startSync(){
+    onValue(ref(rdb, ROOT), snap=>{
+      const changed = applySnap(snap.val());
+      if(!ready){
+        ready = true;
+        /* サーバーにまだ無いデータ（初回など）だけ上げる */
+        S.keys().forEach(k=>{ if(mirror[k] === undefined) push(k, S.get(k)); });
+      }
+      if(changed && window.__lqRefresh) window.__lqRefresh(true);
+    }, err=>{
+      console.error('[LifeQuest] 読み込みエラー', err);
+      if(window.__lqToast) window.__lqToast('つうしんエラー：' + (err.code || ''));
+    });
+  }
+
+  onAuthStateChanged(auth, u=>{ if(u && !started){ started = true; startSync(); } });
+  signInAnonymously(auth).catch(e=>{
+    console.error('[LifeQuest] ログイン失敗', e);
+    if(window.__lqToast) window.__lqToast('つながりません：' + (e.code || ''));
+  });
+}
+</script>
+</body>
+</html>

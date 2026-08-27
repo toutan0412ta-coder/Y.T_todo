@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>かんりしゃ画面｜せいかつクエスト</title>
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#ffffff; --panel2:#f8f9fc; --line:#dde2ec; --line2:#c7cfdd;
+  --txt:#26303f; --sub:#7a869c;
+  --gold:#f0a92c; --gold-d:#b97a10;
+  --green:#2fa85a; --green-d:#1d7a40;
+  --blue:#3d82d8; --blue-d:#2a5d9e;
+  --red:#e04b5c; --red-d:#a92b3a;
+  --shadow:0 2px 6px rgba(38,48,63,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg); color:var(--txt);
+  font-family:'Hiragino Sans','Yu Gothic UI',system-ui,sans-serif; font-size:15px; padding-bottom:40px}
+img{image-rendering:pixelated}
+code{background:#eef1f7; padding:1px 5px; border-radius:3px; font-size:12px}
+pre{background:#20293a; color:#e8eefc; padding:12px; border-radius:8px; overflow:auto; font-size:12px; line-height:1.7}
+a{color:var(--blue-d)}
+.topbar{position:sticky; top:0; z-index:30; background:#fff; border-bottom:2px solid var(--line);
+  padding:11px 14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+  box-shadow:0 1px 4px rgba(38,48,63,.06)}
+.brand{font-size:19px; letter-spacing:1px; white-space:nowrap; color:#1d2735}
+.topright{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12.5px; color:var(--sub)}
+.dot{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:12px;
+  background:#eef1f7; border:1px solid var(--line2)}
+.dot i{width:9px; height:9px; border-radius:50%; background:#b6bfd0; display:block}
+.dot.on{background:#e3f5e8; border-color:#a8dcbb; color:#1d7a40}
+.dot.on i{background:var(--green)}
+.dot.off{background:#ffe9ec; border-color:#f3b8c0; color:#a92b3a}
+.dot.off i{background:var(--red)}
+select,input,textarea{font-family:inherit; font-size:14px; color:var(--txt); background:#fff;
+  border:2px solid var(--line2); border-radius:6px; padding:7px 9px; max-width:100%}
+select:focus,input:focus,textarea:focus{outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(61,130,216,.15)}
+input[type=number]{width:94px}
+.btn{font-family:inherit; font-size:13.5px; cursor:pointer; color:#fff; background:var(--blue);
+  border:none; border-radius:6px; padding:9px 14px; box-shadow:0 2px 0 var(--blue-d); transition:.05s}
+.btn:active{transform:translateY(2px); box-shadow:none}
+.btn.ok{background:var(--green); box-shadow:0 2px 0 var(--green-d)}
+.btn.ng{background:var(--red); box-shadow:0 2px 0 var(--red-d)}
+.btn.gold{background:var(--gold); box-shadow:0 2px 0 var(--gold-d)}
+.btn.sub{background:#fff; color:var(--txt); border:2px solid var(--line2); box-shadow:0 2px 0 var(--line2)}
+.btn.sm{font-size:12.5px; padding:7px 11px}
+.btn:disabled{opacity:.45; cursor:default; transform:none}
+.linka{display:inline-block; text-decoration:none; font-size:12.5px; padding:7px 11px; border-radius:6px;
+  background:#fff; color:var(--txt); border:2px solid var(--line2); box-shadow:0 2px 0 var(--line2)}
+.tabs{position:sticky; top:57px; z-index:29; display:flex; gap:6px; padding:9px 14px; background:#eef1f7;
+  border-bottom:2px solid var(--line); overflow-x:auto}
+.tabs::-webkit-scrollbar{height:0}
+.tab{font-family:inherit; font-size:13.5px; cursor:pointer; white-space:nowrap; background:#fff;
+  color:var(--sub); border:2px solid var(--line2); border-radius:6px; padding:9px 15px}
+.tab.on{background:var(--blue); color:#fff; border-color:var(--blue)}
+.cnt{display:inline-block; min-width:20px; margin-left:6px; padding:0 6px; border-radius:10px;
+  background:var(--red); color:#fff; font-size:12px; text-align:center}
+.cnt.zero{background:#b6bfd0}
+.tab.on .cnt.zero{background:rgba(255,255,255,.35)}
+main{padding:16px; max-width:1080px; margin:0 auto}
+.card{background:var(--panel); border:2px solid var(--line); border-radius:10px; padding:16px;
+  margin-bottom:16px; box-shadow:var(--shadow)}
+.card h2{margin:0 0 13px; font-size:16.5px; color:#1d2735; display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.row{display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-bottom:11px}
+.row label{font-size:13px; color:var(--sub); min-width:76px}
+.hint{font-size:12px; color:var(--sub); line-height:1.85; font-weight:normal}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:12px}
+.grid.wide{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.empty{color:var(--sub); font-size:13px; padding:18px 0; text-align:center;
+  border:2px dashed var(--line2); border-radius:8px; background:#fafbfd}
+.kb{display:inline-block; font-size:11.5px; font-weight:bold; padding:3px 10px; border-radius:12px}
+.kb-daily{background:#e3f5e8; color:#1d7a40; border:1px solid #a8dcbb}
+.kb-normal{background:#e5eefb; color:#2a5d9e; border:1px solid #aecbee}
+.kb-special{background:linear-gradient(180deg,#fff3cf,#ffe19a); color:#8a5c0d; border:1px solid #e8bf58}
+.st{display:inline-block; font-size:11.5px; padding:3px 10px; border-radius:12px;
+  background:#eef1f7; color:#65718a; border:1px solid var(--line2)}
+.st.pending{background:#fff3d9; color:#a06a06; border-color:#f0cf8a}
+.st.done{background:#e3f5e8; color:#1d7a40; border-color:#a8dcbb}
+.st.arch{background:#f0ece7; color:#8a6a4a; border-color:#d9cbb9}
+.ic{width:28px; height:28px; vertical-align:middle; border-radius:4px; object-fit:contain; flex:none}
+.item{background:#fff; border:2px solid var(--line); border-radius:9px; padding:12px;
+  display:flex; flex-direction:column; gap:9px; box-shadow:var(--shadow)}
+.item.k-daily{border-left:7px solid var(--green)}
+.item.k-normal{border-left:7px solid var(--blue)}
+.item.k-special{border-left:7px solid var(--gold); border-color:#f0d79a; background:linear-gradient(180deg,#fffdf5,#fff)}
+.item.pend{border-color:var(--gold); box-shadow:0 0 0 3px rgba(240,169,44,.18), var(--shadow)}
+.item.arch{opacity:.75}
+.item .head{display:flex; gap:9px; align-items:center; flex-wrap:wrap}
+.item .nm{font-size:15px; font-weight:bold; flex:1; min-width:120px; word-break:break-word}
+.item .meta{font-size:12.5px; color:var(--sub); display:flex; gap:13px; flex-wrap:wrap; align-items:center}
+.item .fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px}
+.item .fields.col{grid-template-columns:1fr; gap:9px}
+.item .fields label{display:block; font-size:11px; color:var(--sub); margin-bottom:3px}
+.item .fields input,.item .fields select{width:100%}
+.imgf{margin-top:2px}
+.imgf label{display:block; font-size:11px; color:var(--sub); margin-bottom:3px}
+.imgrow{display:flex; gap:9px; align-items:flex-start}
+.imgprev{width:62px; height:62px; flex:none; border:2px dashed var(--line2); border-radius:8px;
+  background:#fafbfd; display:flex; align-items:center; justify-content:center; overflow:hidden; text-align:center}
+.imgprev img{width:100%; height:100%; object-fit:contain}
+.imgprev .ph{font-size:10.5px; color:var(--sub); line-height:1.3; padding:2px}
+.imgprev:has(img) .ph{display:none}
+.imgctl{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+.imgctl input{width:100%}
+.imgbtns{display:flex; gap:6px; flex-wrap:wrap; align-items:center}
+.dirnote{font-size:10.5px; color:var(--sub); line-height:1.6}
+.imgsz{font-size:11.5px; color:var(--blue-d); font-weight:bold; white-space:nowrap}
+.cur-path{font-size:11.5px; color:var(--sub); word-break:break-all}
+.item .btns{display:flex; gap:7px; flex-wrap:wrap; padding-top:2px}
+.upanel{background:#fff; border:2px solid var(--line); border-radius:10px; padding:14px; box-shadow:var(--shadow)}
+.upanel.cur{border-color:var(--blue); box-shadow:0 0 0 3px rgba(61,130,216,.15), var(--shadow)}
+.uhead{display:flex; align-items:center; gap:9px; font-size:17px; margin-bottom:11px}
+.uhead .uid{font-size:11px; color:var(--sub); margin-left:auto}
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:8px}
+.kpi{background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:9px 4px; text-align:center}
+.kpi .k{display:block; font-size:10px; color:var(--sub)}
+.kpi .v{display:block; font-size:19px; font-weight:bold}
+.sect{display:flex; align-items:center; gap:7px; font-size:13px; margin:14px 0 5px; color:#3a465b}
+.prow{display:flex; align-items:center; gap:7px; padding:8px 0; border-top:1px solid #eef1f7}
+.prow .pn{flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.prow .pg{font-size:11.5px; color:var(--sub); white-space:nowrap}
+.mini{font-size:12px; color:var(--sub); padding:7px 0}
+.msgprev{background:#fffbe6; border:2px solid #ffd76a; border-radius:8px; padding:8px 10px;
+  font-size:12.5px; line-height:1.7; white-space:pre-wrap; word-break:break-word;
+  max-height:74px; overflow-y:auto}
+.log{max-height:240px; overflow:auto; background:#fafbfd; border:2px solid var(--line);
+  border-radius:7px; padding:11px; font-size:12.5px; line-height:1.95}
+.log span{color:var(--sub); margin-right:8px}
+textarea{width:100%; min-height:170px; font-size:12px; line-height:1.55}
+textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
+.lvgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:10px}
+.lvcell{border:2px solid var(--line); border-radius:8px; padding:7px; text-align:center; background:#fff}
+.lvcell.now{border-color:var(--gold); box-shadow:0 0 0 3px rgba(240,169,44,.18)}
+.lvimg{height:86px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  background:#f3f6fb; border-radius:6px}
+.lvimg img{max-width:100%; max-height:86px; object-fit:contain}
+.lvimg .ph{font-size:10.5px; color:var(--sub)}
+.lvimg:has(img) .ph{display:none}
+.lvno{font-size:12px; margin:5px 0 3px; font-weight:bold}
+.lvcell code{font-size:10px; word-break:break-all}
+.szgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px}
+.szcell{background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:9px}
+.szcell label{display:block; font-size:11.5px; color:var(--sub); margin-bottom:5px}
+.childrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:9px 0; border-top:1px solid #eef1f7}
+.childrow b{min-width:120px}
+.gate{max-width:360px; margin:60px auto; text-align:center}
+.toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(18px);
+  background:var(--green); color:#fff; padding:12px 22px; border-radius:8px; font-size:14px;
+  opacity:0; pointer-events:none; transition:.2s; z-index:90; max-width:90vw; text-align:center;
+  box-shadow:0 4px 14px rgba(38,48,63,.25)}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+@media (max-width:640px){
+  body{font-size:14px}
+  .tabs{top:52px; padding:8px 11px}
+  main{padding:11px}
+  .card{padding:12px}
+  .grid,.grid.wide,.grid.two{grid-template-columns:1fr}
+  .row label{min-width:100%}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">かんりしゃ画面</div>
+  <div class="topright">
+    <span class="dot" id="connDot"><i></i><span id="connTxt">接続中…</span></span>
+    <label for="userSel">こども</label>
+    <select id="userSel"></select>
+    <button class="btn sub sm" id="addBtn">＋こども</button>
+    <span id="syncInfo"></span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab" data-tab="all">みんな</button>
+  <button class="tab on" data-tab="approve">承認まち<span class="cnt zero" id="cntApprove">0</span></button>
+  <button class="tab" data-tab="tiles">タイル管理</button>
+  <button class="tab" data-tab="use">つかいたい<span class="cnt zero" id="cntUse">0</span></button>
+  <button class="tab" data-tab="status">ステータス・メッセージ</button>
+  <button class="tab" data-tab="shop">おみせ・ガチャ</button>
+  <button class="tab" data-tab="look">見た目</button>
+  <button class="tab" data-tab="data">データ</button>
+</nav>
+
+<main id="view"><div class="card"><h2>読み込み中…</h2></div></main>
+<div class="toast" id="toast"></div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+/* ============================================================
+   せいかつクエスト かんりしゃ画面（Firebase Realtime Database 版）
+   ・データは  /lifequest/profiles  と  /lifequest/db/{こどものID}
+   ・onValue で購読しているので、承認するとこども画面に即反映されます
+   ・画像は「パス参照」（image/tile/○○.png など）で保存します
+   ============================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getDatabase, ref, onValue, update, runTransaction, get }
+  from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+/* ---- 設定（firebase-config.js が無いときはここに直接書いてもOK） ---- */
+const FALLBACK_CONFIG = {
+  apiKey:"", authDomain:"", databaseURL:"", projectId:"", storageBucket:"",
+  messagingSenderId:"", appId:""
+};
+const CFG  = (window.LQ_FIREBASE_CONFIG && window.LQ_FIREBASE_CONFIG.databaseURL)
+  ? window.LQ_FIREBASE_CONFIG : FALLBACK_CONFIG;
+const ROOT = window.LQ_ROOT || 'lifequest';
+const PIN  = String(window.LQ_ADMIN_PIN || '');
+
+const IMG='image/', A=IMG+'assets/', TILE_DIR=IMG+'tile/', LV_DIR=IMG+'lv/';
+const NAME_MAP  = { yuika:'ゆいか', touri:'とうり' };
+const BASE_KIDS = ['yuika','touri'];
+
+const KIND_META = {
+  daily  :{label:'日々', desc:'毎日24時にリセット'},
+  normal :{label:'通常', desc:'達成すると翌日に消える'},
+  special:{label:'特別', desc:'キラキラ表示・達成で翌日に消える'}
+};
+const KIND_ORDER = ['daily','normal','special'];
+
+const DEFAULT_ICONS = {
+  coin:A+'coin.gif', star:A+'star.gif', gacha:A+'scene_gachamachine.png',
+  navHome:A+'icon_nav_home.png', navStatus:A+'icon_nav_status.png', navShop:A+'icon_nav_shop.png',
+  character:A+'scene_character.png', bgRoom:A+'bg_room.png'
+};
+const ICON_LABEL = {
+  coin:'お金アイコン', star:'けいけんちアイコン', gacha:'ガチャの絵',
+  navHome:'フッター：メイン（全面・文字なし）', navStatus:'フッター：ステータス（全面・文字なし）',
+  navShop:'フッター：お店（全面・文字なし）',
+  character:'キャラ画像（レベル画像が無いとき）', bgRoom:'メイン画面の背景'
+};
+const DEFAULT_ICON_SIZE = {
+  sm:16, lg:22, status:28, money:34, reward:14, tile:58, inv:26, shop:30, use:22, nav:26, gacha:110
+};
+const SIZE_LABEL = {
+  sm:'小アイコン', lg:'中アイコン', status:'ステータス', money:'ヘッダーのお金', reward:'タイルの報酬',
+  tile:'タイルの絵', inv:'もちもの', shop:'商品', use:'使用中リスト', nav:'フッターの高さ', gacha:'ガチャの絵'
+};
+
+/* ================= 小道具 ================= */
+const $   = s=>document.querySelector(s);
+const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const num = (v,d=0)=>{const n=Number(v); return isNaN(n)?d:n;};
+const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = t=>{ if(!t) return '-'; const d=new Date(t); return isNaN(d)?'-':
+  (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+const safeKey = s=>String(s==null?'':s).replace(/[.#$/\[\]]/g,'_').slice(0,120) || 'k';
+function defaultName(id){
+  if(NAME_MAP[id]) return NAME_MAP[id];
+  const m=String(id).match(/^user(\d+)$/i);
+  return m ? ('プレイヤー'+m[1]) : id;
+}
+const IMG_EXT = /\.(png|jpe?g|jfif|gif|webp|svg|bmp|ico|avif|heic|heif)(\?.*)?$/i;
+function isImg(v){
+  if(typeof v!=='string') return false;
+  const s=v.trim();
+  if(!s) return false;
+  if(s.startsWith('data:image')||s.startsWith('blob:')) return true;
+  return IMG_EXT.test(s) || s.indexOf('/')>=0;
+}
+const brokenImg={};
+function markBroken(src){ if(src) brokenImg[src]=true; }
+function canShow(src){ return !!src && isImg(src) && !brokenImg[src]; }
+function iconHTML(v){ return canShow(v) ? '<img class="ic" src="'+esc(v)+'" alt="">' : ''; }
+document.addEventListener('error', e=>{
+  const el=e.target;
+  if(!el || el.tagName!=='IMG') return;
+  markBroken(el.getAttribute('src')||''); el.remove();
+}, true);
+document.addEventListener('load', e=>{
+  const el=e.target;
+  if(!el || el.tagName!=='IMG') return;
+  const p=el.parentElement && el.parentElement.querySelector('.ph');
+  if(p) p.style.display='none';
+}, true);
+function toast(m,bad){
+  const t=$('#toast'); t.textContent=m;
+  t.style.background = bad?'var(--red)':'var(--green)';
+  t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600);
+}
+function fixAsset(v){
+  if(typeof v!=='string') return '';
+  v=v.trim().replace(/\\/g,'/');
+  if(!v || v.startsWith('data:') || v.startsWith('blob:') || /^(https?:|\/\/|\/)/.test(v)) return v;
+  if(!isImg(v)) return '';
+  if(/^assets\//.test(v)) return IMG+v;
+  if(v.indexOf('/')<0) return A+v;
+  return v;
+}
+function fixTile(v){
+  if(typeof v!=='string') return '';
+  v=v.trim().replace(/\\/g,'/');
+  if(!v || v.startsWith('data:') || v.startsWith('blob:') || /^(https?:|\/\/|\/)/.test(v)) return v;
+  if(!isImg(v)) return '';
+  if(v.indexOf('/')>=0) return v;
+  return TILE_DIR+v;
+}
+function cleanIcon(v,tile){
+  if(typeof v!=='string') return '';
+  const s=v.trim();
+  if(!s || !isImg(s)) return '';
+  return tile ? fixTile(s) : fixAsset(s);
+}
+function fmtBytes(n){
+  if(n<1024) return n+'B';
+  if(n<1024*1024) return (n/1024).toFixed(1)+'KB';
+  return (n/1024/1024).toFixed(2)+'MB';
+}
+
+/* ================= Firebase ================= */
+let rdb=null, uidAuth=null, cloud={}, connected=false;
+let profiles=[], currentId=null, db=null, tab='approve';
+let busy=false, dirty=false, seeded=false;
+const rolloverDone={};
+
+function P(...parts){ return parts.join('/'); }
+function kidPath(kid,...rest){ return P('db',kid,...rest); }
+async function push(o){
+  if(!rdb){ toast('接続していません',true); return false; }
+  try{ await update(ref(rdb,ROOT), o); $('#syncInfo').textContent='保存 '+fmt(Date.now()); return true; }
+  catch(e){ toast('保存できません：'+(e.code||e.message),true); return false; }
+}
+function addLog(o,kid,text){
+  if(!text) return;
+  o[kidPath(kid,'logs','l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5))]={ts:Date.now(),text:text};
+}
+async function txPlayer(kid,fn){
+  await runTransaction(ref(rdb, ROOT+'/'+kidPath(kid,'player')), p=>{
+    p = p || {name:defaultName(kid),level:1,exp:0,expToNext:100,money:0};
+    p.level=Math.max(1,num(p.level,1)); p.exp=Math.max(0,num(p.exp,0));
+    p.expToNext=Math.max(1,num(p.expToNext,100)); p.money=Math.max(0,num(p.money,0));
+    fn(p); return p;
+  });
+}
+const grantFn = (exp,money)=>p=>{
+  p.money=Math.max(0,p.money+num(money,0)); p.exp+=num(exp,0);
+  while(p.exp>=p.expToNext){ p.exp-=p.expToNext; p.level+=1; }
+};
+const revokeFn = (exp,money)=>p=>{
+  p.money=Math.max(0,p.money-num(money,0)); p.exp-=num(exp,0);
+  while(p.exp<0 && p.level>1){ p.level-=1; p.exp+=p.expToNext; }
+  if(p.exp<0) p.exp=0;
+};
+async function txInventory(kid,fn){
+  await runTransaction(ref(rdb, ROOT+'/'+kidPath(kid,'inventory')), inv=>{ inv=inv||{}; fn(inv); return inv; });
+}
+function invAdd(inv,refId,icon,name,qty){
+  const hit=Object.keys(inv).find(k=>inv[k] && inv[k].refId===refId);
+  if(hit) inv[hit].qty=num(inv[hit].qty,1)+num(qty,1);
+  else inv['inv_'+safeKey(refId)+'_'+Date.now()]={refId:refId,icon:icon||'',name:name||'アイテム',qty:num(qty,1)};
+}
+
+/* ================= 読み出し（クラウド → 画面用の形） ================= */
+function listOf(o,descKey){
+  if(!o || typeof o!=='object') return [];
+  const a=Object.keys(o).filter(k=>o[k]&&typeof o[k]==='object')
+    .map(k=>Object.assign({},o[k],{id:k}));
+  if(descKey) a.sort((x,y)=>num(y[descKey],0)-num(x[descKey],0));
+  else a.sort((x,y)=>{ const d=num(x.ord,0)-num(y.ord,0); return d||String(x.id).localeCompare(String(y.id)); });
+  return a;
+}
+function nextOrd(arr){ return arr.reduce((m,x)=>Math.max(m,num(x.ord,0)),0)+10; }
+function kidLocal(kid){
+  const s=(cloud.db && cloud.db[kid]) || {};
+  const p=Object.assign({name:defaultName(kid),level:1,exp:0,expToNext:100,money:0}, s.player||{});
+  const d={
+    id:kid,
+    player:{ name:p.name||defaultName(kid), level:Math.max(1,num(p.level,1)),
+      exp:Math.max(0,num(p.exp,0)), expToNext:Math.max(1,num(p.expToNext,100)),
+      money:Math.max(0,num(p.money,0)) },
+    message: typeof s.message==='string' ? s.message : '',
+    messageAt: num(s.messageAt,0),
+    lastResetDate: s.lastResetDate || '',
+    icons:{}, iconSize:{},
+    tiles:listOf(s.tiles),
+    shopItems:listOf(s.shopItems),
+    gacha:{ cost:num(s.gacha&&s.gacha.cost,300), pool:listOf(s.gacha&&s.gacha.pool) },
+    inventory:listOf(s.inventory),
+    useRequests:listOf(s.useRequests,'at'),
+    useHistory:listOf(s.useHistory,'usedAt'),
+    logs:listOf(s.logs,'ts')
+  };
+  Object.keys(DEFAULT_ICONS).forEach(k=>{
+    const v=(s.icons&&typeof s.icons[k]==='string')?s.icons[k]:DEFAULT_ICONS[k];
+    d.icons[k]=fixAsset(v);
+  });
+  Object.keys(DEFAULT_ICON_SIZE).forEach(k=>{
+    d.iconSize[k]=Math.max(6,num(s.iconSize&&s.iconSize[k],DEFAULT_ICON_SIZE[k]));
+  });
+  d.tiles.forEach(t=>{
+    if(!KIND_META[t.kind]) t.kind='daily';
+    t.label=String(t.label||'タイル');
+    t.icon=cleanIcon(t.icon,false); t.cardImage=cleanIcon(t.cardImage,true);
+    t.rewardExp=num(t.rewardExp,0); t.rewardMoney=num(t.rewardMoney,0);
+    t.completed=!!t.completed; t.pending=!!t.pending; t.archived=!!t.archived;
+  });
+  d.shopItems.forEach(x=>{ x.name=String(x.name||'商品'); x.price=num(x.price,0);
+    x.desc=String(x.desc||''); x.icon=cleanIcon(x.icon,false); });
+  d.gacha.pool.forEach(g=>{ g.name=String(g.name||'景品'); g.rarity=String(g.rarity||'N');
+    g.weight=Math.max(0,num(g.weight,1)); g.icon=cleanIcon(g.icon,false); });
+  d.inventory.forEach(i=>{ i.qty=num(i.qty,1); i.icon=cleanIcon(i.icon,false); i.name=String(i.name||'アイテム'); });
+  d.useRequests.forEach(r=>{ r.icon=cleanIcon(r.icon,false); r.name=String(r.name||'アイテム'); });
+  d.useHistory.forEach(h=>{ h.icon=cleanIcon(h.icon,false); });
+  return d;
+}
+function loadProfiles(){
+  const pr=cloud.profiles||{}, kids=cloud.db||{};
+  const ids={};
+  Object.keys(pr).forEach(k=>ids[k]=1);
+  Object.keys(kids).forEach(k=>ids[k]=1);
+  profiles=Object.keys(ids).map(id=>{
+    const nm=(kids[id]&&kids[id].player&&kids[id].player.name) || (pr[id]&&pr[id].name) || defaultName(id);
+    return {id:id, name:nm, ord:num(pr[id]&&pr[id].ord, BASE_KIDS.indexOf(id)>=0?BASE_KIDS.indexOf(id):99)};
+  }).sort((a,b)=>a.ord-b.ord || a.id.localeCompare(b.id));
+}
+
+/* ================= 初期データ ================= */
+function seedKid(kid){
+  const nm=defaultName(kid);
+  const tiles={}; let ord=0;
+  const T=(key,kind,label,exp,money)=>{ tiles[key]={kind:kind,label:label,icon:'',cardImage:'',
+    rewardExp:exp,rewardMoney:money,completed:false,pending:false,archived:false,ord:(ord+=10)}; };
+  T('t1','daily','着替え',10,5); T('t2','daily','朝ごはん',10,5); T('t3','daily','歯みがき',5,5);
+  T('t4','daily','学校の準備',10,5); T('t5','daily','勉強',20,10); T('t6','daily','お手伝い',15,10);
+  T('t7','daily','運動',15,10); T('t8','daily','おふろ',5,5); T('t9','daily','早く寝る',10,5);
+  T('n1','normal','ミニゲーム クリア！',15,20);
+  T('s1','special','じっせき クリア！',25,30);
+  T('s2','special','ギフト うけとり！',5,15);
+  return {
+    player:{name:nm, level:1, exp:0, expToNext:100, money:0},
+    message:'', messageAt:0,
+    lastResetDate:new Date().toDateString(),
+    icons:Object.assign({},DEFAULT_ICONS),
+    iconSize:Object.assign({},DEFAULT_ICON_SIZE),
+    tiles:tiles,
+    shopItems:{
+      sh1:{name:'スニーカー',price:500,desc:'移動速度が少しアップ！',icon:A+'icon_sneaker.png',ord:10},
+      sh2:{name:'エナジードリンク',price:300,desc:'行動をすぐにクリアできる！',icon:A+'icon_energydrink.png',ord:20},
+      sh3:{name:'スキルブック',price:800,desc:'経験値が10%アップ！',icon:A+'icon_skillbook.png',ord:30},
+      sh4:{name:'まもりの盾',price:1000,desc:'ミスしても1回防げる！',icon:A+'icon_shield.png',ord:40}
+    },
+    gacha:{ cost:300, pool:{
+      g1:{name:'星のかけら',rarity:'N',weight:40,icon:A+'star.gif',ord:10},
+      g2:{name:'ラッキーカード',rarity:'R',weight:30,icon:A+'icon_ticket.png',ord:20},
+      g3:{name:'きらめく宝石',rarity:'SR',weight:20,icon:A+'icon_diamond.png',ord:30},
+      g4:{name:'伝説の帽子',rarity:'SSR',weight:10,icon:A+'icon_cap.png',ord:40}
+    }}
+  };
+}
+function toCloudKid(d){
+  const o={
+    player:d.player, message:d.message||'', messageAt:num(d.messageAt,0),
+    lastResetDate:d.lastResetDate||new Date().toDateString(),
+    icons:d.icons||{}, iconSize:d.iconSize||{},
+    tiles:{}, shopItems:{}, gacha:{cost:num(d.gacha&&d.gacha.cost,300),pool:{}},
+    inventory:{}, useRequests:{}, useHistory:{}, logs:{}
+  };
+  (d.tiles||[]).forEach((t,i)=>{ const k=safeKey(t.id||('tl_'+uid()));
+    o.tiles[k]={kind:t.kind||'daily',label:t.label||'タイル',icon:t.icon||'',cardImage:t.cardImage||'',
+      rewardExp:num(t.rewardExp,0),rewardMoney:num(t.rewardMoney,0),
+      completed:!!t.completed,pending:!!t.pending,archived:!!t.archived,ord:num(t.ord,(i+1)*10)}; });
+  (d.shopItems||[]).forEach((s,i)=>{ o.shopItems[safeKey(s.id||('sh_'+uid()))]=
+    {name:s.name||'商品',price:num(s.price,0),desc:s.desc||'',icon:s.icon||'',ord:num(s.ord,(i+1)*10)}; });
+  ((d.gacha&&d.gacha.pool)||[]).forEach((g,i)=>{ o.gacha.pool[safeKey(g.id||('g_'+uid()))]=
+    {name:g.name||'景品',rarity:g.rarity||'N',weight:Math.max(0,num(g.weight,1)),icon:g.icon||'',ord:num(g.ord,(i+1)*10)}; });
+  (d.inventory||[]).forEach(i=>{ o.inventory[safeKey(i.id||('inv_'+uid()))]=
+    {refId:i.refId||'x',icon:i.icon||'',name:i.name||'アイテム',qty:num(i.qty,1)}; });
+  (d.useRequests||[]).forEach(r=>{ o.useRequests[safeKey(r.id||('use_'+uid()))]=
+    {refId:r.refId||'x',icon:r.icon||'',name:r.name||'アイテム',at:num(r.at,Date.now())}; });
+  (d.useHistory||[]).forEach((h,i)=>{ o.useHistory['h'+(num(h.usedAt,Date.now())+i).toString(36)]=
+    {icon:h.icon||'',name:h.name||'アイテム',usedAt:num(h.usedAt,Date.now())}; });
+  (d.logs||[]).slice(0,80).forEach((l,i)=>{ o.logs['l'+(num(l.ts,Date.now())-i).toString(36)]=
+    {ts:num(l.ts,Date.now()),text:String(l.text||'')}; });
+  return o;
+}
+
+/* ================= 画面切りかえ ================= */
+function typing(){
+  const a=document.activeElement;
+  return a && (a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
+}
+function scheduleRender(){
+  if(busy || typing()){ dirty=true; return; }
+  dirty=false; render();
+}
+document.addEventListener('focusout', ()=>setTimeout(()=>{ if(dirty && !typing() && !busy){ dirty=false; render(); } },250));
+
+function counts(){
+  const ea=$('#cntApprove'), eu=$('#cntUse');
+  const a = db ? db.tiles.filter(t=>t.pending&&!t.completed&&!t.archived).length : 0;
+  const u = db ? db.useRequests.length : 0;
+  ea.textContent=a; ea.classList.toggle('zero',a===0);
+  eu.textContent=u; eu.classList.toggle('zero',u===0);
+}
+function fillSelect(){
+  const sel=$('#userSel');
+  const cur=currentId;
+  sel.innerHTML = profiles.length
+    ? profiles.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===cur?' selected':'')+'>'+esc(p.name||p.id)+'（'+esc(p.id)+'）</option>').join('')
+    : '<option value="">（いません）</option>';
+}
+function render(){
+  if(!CFG.databaseURL){ $('#view').innerHTML=viewSetup(); return; }
+  if(currentId) db=kidLocal(currentId);
+  counts(); fillSelect();
+  if(!currentId || !db){
+    $('#view').innerHTML='<div class="card"><h2>こどもが登録されていません</h2>'
+      +'<div class="row"><button class="btn ok" data-act="addChild">こどもを追加する</button></div>'
+      +'<div class="hint">IDを <code>yuika</code> にすると <code>yuika_app.html</code> と結びつきます。</div></div>';
+    return;
+  }
+  $('#view').innerHTML =
+    tab==='all'     ? viewAll()     :
+    tab==='approve' ? viewApprove() :
+    tab==='tiles'   ? viewTiles()   :
+    tab==='use'     ? viewUse()     :
+    tab==='status'  ? viewStatus()  :
+    tab==='shop'    ? viewShop()    :
+    tab==='look'    ? viewLook()    : viewData();
+}
+function viewSetup(){
+  return '<div class="card"><h2>Firebase の設定が必要です</h2>'
+    +'<div class="hint">同じフォルダに <code>firebase-config.js</code> を置いて、'
+    +'<code>databaseURL</code> などを入れてください。Firebase コンソールでは'
+    +'「Realtime Database の作成」「Authentication → 匿名ログインを有効化」'
+    +'「承認済みドメインに GitHub Pages のドメインを追加」が必要です。</div>'
+    +'<pre>window.LQ_FIREBASE_CONFIG = {\n'
+    +'  apiKey:"…", authDomain:"…firebaseapp.com",\n'
+    +'  databaseURL:"https://…firebasedatabase.app",\n'
+    +'  projectId:"…", appId:"…"\n};\n'
+    +'window.LQ_ROOT = "lifequest";</pre></div>';
+}
+
+/* ================= 画像の選択（パス参照で保存） ================= */
+const newImg = {tileCard:'', shopIcon:'', prizeIcon:''};
+const imgMetaCache={}, previewURL={};
+function dirOf(scope,field){
+  if(scope==='tiles' && field==='cardImage') return TILE_DIR;
+  if(scope==='new'   && field==='tileCard')  return TILE_DIR;
+  return A;
+}
+function buildPath(scope,field,fileName){
+  const base=String(fileName||'').replace(/\\/g,'/').split('/').pop().trim();
+  return base ? dirOf(scope,field)+base : '';
+}
+function looksLikeImage(file){
+  if(!file) return false;
+  if(file.type && file.type.startsWith('image/')) return true;
+  return IMG_EXT.test(file.name||'');
+}
+function readAsDataURL(file){
+  return new Promise((res,rej)=>{ const fr=new FileReader();
+    fr.onload=()=>res(String(fr.result||'')); fr.onerror=()=>rej(new Error('読み込めません'));
+    fr.readAsDataURL(file); });
+}
+function readImgMeta(src){
+  return new Promise((res,rej)=>{ if(!src) return rej(new Error('なし'));
+    const im=new Image(); im.onload=()=>res({w:im.naturalWidth,h:im.naturalHeight});
+    im.onerror=()=>rej(new Error('サイズ不明')); im.src=src; });
+}
+function probeImageExists(src){
+  return new Promise(resolve=>{ if(!src){ resolve(false); return; }
+    const im=new Image(); im.onload=()=>resolve(true); im.onerror=()=>resolve(false); im.src=src; });
+}
+let pickTarget=null, pickInput=null;
+function ensurePicker(){
+  if(pickInput) return pickInput;
+  pickInput=document.createElement('input');
+  pickInput.type='file'; pickInput.accept='image/*';
+  pickInput.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+  document.body.appendChild(pickInput);
+  pickInput.addEventListener('change', onPicked);
+  return pickInput;
+}
+function openPicker(scope,id,field){
+  if(!scope||!field){ toast('もう一度「画像を選ぶ」を押してください',true); return; }
+  pickTarget={scope:scope,id:id||'',field:field};
+  const inp=ensurePicker(); inp.value=''; inp.click();
+}
+async function onPicked(){
+  const t=pickTarget, file=pickInput.files && pickInput.files[0];
+  pickInput.value='';
+  if(!t){ toast('もう一度「画像を選ぶ」を押してください',true); return; }
+  if(!file) return;
+  if(!looksLikeImage(file)){ toast('画像ファイルを選んでください',true); return; }
+  const metaKey=t.scope+'_'+t.id+'_'+t.field;
+  try{
+    const durl=await readAsDataURL(file);
+    previewURL[metaKey]=durl;
+    try{ const m=await readImgMeta(durl); imgMetaCache[metaKey]=m.w+'×'+m.h+'px（'+fmtBytes(file.size)+'）'; }
+    catch(e){ imgMetaCache[metaKey]=fmtBytes(file.size); }
+  }catch(e){ imgMetaCache[metaKey]=fmtBytes(file.size); }
+  const path=buildPath(t.scope,t.field,file.name);
+  if(!path){ toast('ファイル名を読み取れませんでした',true); return; }
+  applyImage(t.scope,t.id,t.field,path,true);
+}
+function imgField(o){
+  const attr=o.attr||'data-f';
+  const val=(typeof o.val==='string')?o.val:'';
+  const dir=dirOf(o.scope,o.field);
+  const sc=esc(o.scope), si=esc(o.id), sf=esc(o.field);
+  const metaKey=o.scope+'_'+o.id+'_'+o.field;
+  const metaTxt=imgMetaCache[metaKey]||'';
+  const pv=previewURL[metaKey]||(canShow(val)?val:'');
+  const dsa=' data-scope="'+sc+'" data-id="'+si+'" data-field="'+sf+'"';
+  return '<div class="imgf"><label>'+esc(o.label)+'</label><div class="imgrow">'
+    +'<div class="imgprev" id="prev_'+sc+'_'+si+'_'+sf+'">'
+    +'<span class="ph">'+(val?'画像なし':'未設定')+'</span>'
+    +(pv?'<img src="'+esc(pv)+'" alt="">':'')+'</div>'
+    +'<div class="imgctl">'
+    +'<input '+attr+'="'+sf+'" data-path="'+sc+'|'+si+'|'+sf+'" value="'+esc(val)+'" placeholder="'+esc(o.ph||'')+'">'
+    +'<div class="imgbtns">'
+    +'<button class="btn sub sm" data-act="pick"'+dsa+'>画像を選ぶ</button>'
+    +'<button class="btn sub sm" data-act="applypath"'+dsa+'>パスを反映</button>'
+    +'<span class="imgsz">'+esc(metaTxt)+'</span>'
+    +(val ? '<button class="btn sub sm" data-act="clearimg"'+dsa+'>設定を消す</button>':'')
+    +'</div>'
+    +'<div class="cur-path">'+(val?('参照パス：<code>'+esc(val)+'</code>'):'未設定（文字だけ表示されます）')+'</div>'
+    +'<div class="dirnote">ファイル名だけなら <code>'+esc(dir)+'</code> のファイルとして参照します。'
+    +'フォルダを含めて書くと、そのパスをそのまま参照します。</div>'
+    +'</div></div></div>';
+}
+function fieldPath(scope,id,field){
+  if(scope==='tiles')     return kidPath(currentId,'tiles',id,field);
+  if(scope==='shopItems') return kidPath(currentId,'shopItems',id,field);
+  if(scope==='gachaPool') return kidPath(currentId,'gacha','pool',id,field);
+  if(scope==='icons')     return kidPath(currentId,'icons',field);
+  return '';
+}
+async function applyImage(scope,id,field,val,fromPick){
+  const dir=dirOf(scope,field);
+  val=(typeof val==='string')?val.trim():'';
+  if(val) val=(dir===TILE_DIR)?fixTile(val):fixAsset(val);
+  if(val) delete brokenImg[val];
+
+  if(scope==='new'){
+    if(!Object.prototype.hasOwnProperty.call(newImg,field)){ toast('設定先が見つかりません',true); return; }
+    newImg[field]=val;
+    const metaKey='new_'+id+'_'+field;
+    const box=document.getElementById('prev_new_'+id+'_'+field);
+    if(box){ const pv=previewURL[metaKey]||(canShow(val)?val:'');
+      box.innerHTML='<span class="ph">'+(val?'画像なし':'未設定')+'</span>'+(pv?'<img src="'+esc(pv)+'" alt="">':''); }
+    const inp=document.querySelector('[data-path="new|'+id+'|'+field+'"]');
+    if(inp) inp.value=val||'';
+    if(val && fromPick) noticePath(val); else toast(val?'画像を選びました（追加ボタンで登録されます）':'画像の設定を消しました');
+    return;
+  }
+  const p=fieldPath(scope,id,field);
+  if(!p){ toast('設定先が見つかりません',true); return; }
+  const o={}; o[p]=val;
+  addLog(o,currentId, val?('画像を設定：'+val):'画像の設定を消去');
+  if(!await push(o)) return;
+  if(val && fromPick) noticePath(val);
+  else toast(val?'画像を設定しました':'画像の設定を消しました（文字だけ表示になります）');
+}
+function noticePath(path){
+  probeImageExists(path).then(ok=>{
+    if(ok) toast('画像を設定しました：'+path);
+    else toast(path+' として設定しました。GitHub のこのパスに画像を置くと表示されます');
+  });
+}
+async function checkMissingTileImages(){
+  const list=db.tiles.filter(t=>t.cardImage);
+  if(!list.length){ toast('確認する画像がありません'); return; }
+  toast('画像を確認しています…'); busy=true;
+  const broken=[];
+  try{
+    for(const t of list){
+      const ok=await probeImageExists(t.cardImage);
+      if(!ok){ markBroken(t.cardImage); broken.push(t); }
+    }
+  } finally { busy=false; }
+  if(!broken.length){ toast('すべての画像が見つかりました'); return; }
+  const o={};
+  broken.forEach(t=>{ o[kidPath(currentId,'tiles',t.id,'cardImage')]=''; });
+  addLog(o,currentId,'画像が見つからないタイル'+broken.length+'件の設定を解除');
+  if(await push(o)) toast(broken.length+'件のタイルを文字だけの表示に戻しました');
+}
+
+/* ================= みんな ================= */
+function viewAll(){
+  const panels = profiles.map(p=>{
+    const d=kidLocal(p.id);
+    const pend=d.tiles.filter(t=>t.pending&&!t.completed&&!t.archived);
+    const uses=d.useRequests;
+    const pct=Math.min(100,Math.round(d.player.exp/d.player.expToNext*100));
+    return '<section class="upanel'+(p.id===currentId?' cur':'')+'">'
+      +'<div class="uhead">'+iconHTML(d.icons.star)+'<b>'+esc(d.player.name)+'</b>'
+      +'<span class="uid">'+esc(p.id)+(p.id===currentId?'（編集中）':'')+'</span></div>'
+      +'<div class="kpis">'
+      +'<div class="kpi"><span class="k">レベル</span><span class="v">'+d.player.level+'</span></div>'
+      +'<div class="kpi"><span class="k">EXP</span><span class="v">'+pct+'%</span></div>'
+      +'<div class="kpi"><span class="k">おかね</span><span class="v">'+d.player.money.toLocaleString()+'</span></div>'
+      +'<div class="kpi"><span class="k">もちもの</span><span class="v">'+d.inventory.length+'</span></div>'
+      +'</div>'
+      +(d.message ? '<div class="sect">いまのメッセージ</div><div class="msgprev">'+esc(d.message)+'</div>' : '')
+      +'<div class="sect">承認まち <span class="st '+(pend.length?'pending':'')+'">'+pend.length+'</span></div>'
+      +(pend.length ? pend.map(t=>'<div class="prow">'+iconHTML(t.cardImage||t.icon)
+          +'<span class="pn">'+esc(t.label)+'</span>'
+          +'<span class="pg">EXP '+t.rewardExp+' / おかね '+t.rewardMoney+'</span>'
+          +'<button class="btn ok sm" data-act="oapprove" data-uid="'+esc(p.id)+'" data-tid="'+esc(t.id)+'">承認</button>'
+          +'<button class="btn sub sm" data-act="oreject" data-uid="'+esc(p.id)+'" data-tid="'+esc(t.id)+'">取消</button>'
+        +'</div>').join('') : '<div class="mini">ありません</div>')
+      +'<div class="sect">使用中 <span class="st '+(uses.length?'pending':'')+'">'+uses.length+'</span></div>'
+      +(uses.length ? uses.map(r=>'<div class="prow">'+iconHTML(r.icon)
+          +'<span class="pn">'+esc(r.name)+'</span>'
+          +'<button class="btn ok sm" data-act="oconsume" data-uid="'+esc(p.id)+'" data-rid="'+esc(r.id)+'">つかった</button>'
+          +'<button class="btn sub sm" data-act="oback" data-uid="'+esc(p.id)+'" data-rid="'+esc(r.id)+'">差し戻す</button>'
+        +'</div>').join('') : '<div class="mini">ありません</div>')
+      +'<div class="btns" style="margin-top:12px">'
+      +'<button class="btn sm" data-act="switchTo" data-uid="'+esc(p.id)+'">この子を編集する</button>'
+      +'<a class="linka" href="./'+esc(p.id)+'_app.html" target="_blank" rel="noopener">'+esc(p.id)+'_app.html をひらく</a>'
+      +'</div></section>';
+  }).join('');
+  return '<div class="card"><h2>みんなのようす <span class="hint">'+profiles.length+'人ぶん・変更は自動で反映されます</span></h2>'
+    +'<div class="grid two">'+(panels||'<div class="empty">登録されている子どもがいません</div>')+'</div></div>';
+}
+
+/* ================= 承認まち ================= */
+function tileHead(t){
+  return '<div class="head">'+iconHTML(t.cardImage||t.icon)+'<span class="nm">'+esc(t.label)+'</span>'
+    +'<span class="kb kb-'+t.kind+'">'+KIND_META[t.kind].label+'</span></div>'
+    +'<div class="meta"><span>EXP '+t.rewardExp+'</span><span>おかね '+t.rewardMoney+'</span>'
+    +'<span class="st '+(t.archived?'arch':(t.completed?'done':(t.pending?'pending':'')))+'">'
+    +(t.archived?'かくれている':(t.completed?'達成ずみ':(t.pending?'申請中':'未達成')))+'</span></div>';
+}
+function viewApprove(){
+  const pend=db.tiles.filter(t=>t.pending&&!t.completed&&!t.archived);
+  const done=db.tiles.filter(t=>t.completed&&!t.archived);
+  return '<div class="card"><h2>承認まち（'+pend.length+'件）</h2><div class="grid">'
+    +(pend.length ? pend.map(t=>'<div class="item pend k-'+t.kind+'" data-scope="tiles" data-id="'+esc(t.id)+'">'+tileHead(t)
+        +'<div class="btns"><button class="btn ok sm" data-act="approve">承認して報酬をあげる</button>'
+        +'<button class="btn sub sm" data-act="reject">申請をとりけす</button></div></div>').join('')
+      : '<div class="empty">承認まちはありません</div>')
+    +'</div></div>'
+    +'<div class="card"><h2>今日 達成ずみ（'+done.length+'件）</h2><div class="grid">'
+    +(done.length ? done.map(t=>'<div class="item k-'+t.kind+'" data-scope="tiles" data-id="'+esc(t.id)+'">'+tileHead(t)
+        +'<div class="btns"><button class="btn sub sm" data-act="undo">未達成に戻す（報酬も取消）</button></div></div>').join('')
+      : '<div class="empty">まだありません</div>')
+    +'</div><div class="hint" style="margin-top:11px">日々タイルは翌日0時にリセット、通常・特別タイルは達成すると翌日に消えます'
+    +'（タイル管理の「かくれているタイル」から復活できます）。</div></div>';
+}
+
+/* ================= タイル管理 ================= */
+function tileEditor(t){
+  return '<div class="item k-'+t.kind+(t.archived?' arch':'')+'" data-scope="tiles" data-id="'+esc(t.id)+'">'+tileHead(t)
+    +'<div class="fields col">'
+    +'<div><label>なまえ</label><input data-f="label" value="'+esc(t.label)+'"></div>'
+    +'<div><label>種別</label><select data-f="kind">'
+    +KIND_ORDER.map(k=>'<option value="'+k+'"'+(t.kind===k?' selected':'')+'>'+KIND_META[k].label+'</option>').join('')
+    +'</select></div>'
+    +'<div><label>けいけんち</label><input type="number" data-f="rewardExp" value="'+t.rewardExp+'"></div>'
+    +'<div><label>おかね</label><input type="number" data-f="rewardMoney" value="'+t.rewardMoney+'"></div>'
+    +'</div>'
+    +imgField({scope:'tiles',id:t.id,field:'cardImage',val:t.cardImage,label:'タイル全面の画像',ph:'tile_xxx.png'})
+    +'<div class="btns">'
+    +'<button class="btn gold sm" data-act="saveOne">この1枚を保存</button>'
+    +(t.archived ? '<button class="btn ok sm" data-act="restore">もどす（表示する）</button>'
+        : (t.completed ? '<button class="btn sub sm" data-act="undo">未達成に戻す</button>'
+                       : '<button class="btn ok sm" data-act="approve">達成にする</button>')
+          +'<button class="btn sub sm" data-act="hideTile">かくす</button>')
+    +(profiles.length>1 ? '<button class="btn sub sm" data-act="copyTile">ほかの子にもコピー</button>':'')
+    +'<button class="btn ng sm" data-act="delTile">削除</button></div></div>';
+}
+function viewTiles(){
+  const sections = KIND_ORDER.map(k=>{
+    const list=db.tiles.filter(t=>t.kind===k&&!t.archived);
+    return '<div class="card"><h2><span class="kb kb-'+k+'">'+KIND_META[k].label+'</span> タイル（'+list.length+'）'
+      +'<span class="hint">'+KIND_META[k].desc+'</span></h2>'
+      +'<div class="grid wide">'+(list.length?list.map(tileEditor).join(''):'<div class="empty">ありません</div>')+'</div></div>';
+  }).join('');
+  const arch=db.tiles.filter(t=>t.archived);
+  return sections
+    +'<div class="card"><h2>かくれているタイル（'+arch.length+'）</h2>'
+    +'<div class="grid wide">'+(arch.length?arch.map(tileEditor).join(''):'<div class="empty">ありません</div>')+'</div></div>'
+    +'<div class="card"><h2>タイルを追加</h2>'
+    +'<div class="row"><label>なまえ</label><input id="a_label" placeholder="おてつだいの名前" style="flex:1;min-width:150px"></div>'
+    +'<div class="row"><label>種別</label><select id="a_kind">'
+    +KIND_ORDER.map(k=>'<option value="'+k+'">'+KIND_META[k].label+'（'+KIND_META[k].desc+'）</option>').join('')+'</select></div>'
+    +'<div class="row"><label>けいけんち</label><input type="number" id="a_exp" value="10"></div>'
+    +'<div class="row"><label>おかね</label><input type="number" id="a_money" value="10"></div>'
+    +'<div class="row"><label>追加先</label><label style="min-width:0"><input type="checkbox" id="a_all" style="width:auto">'
+    +' みんな（'+profiles.length+'人）に同じタイルを追加する</label></div>'
+    +'<div class="row" style="align-items:flex-start"><div style="flex:1;min-width:240px">'
+    +imgField({scope:'new',id:'new',field:'tileCard',val:newImg.tileCard,label:'タイル全面の画像',ph:'tile_xxx.png',attr:'data-skip'})
+    +'</div></div>'
+    +'<div class="row"><button class="btn ok" data-act="addTile">追加する</button>'
+    +'<button class="btn gold" data-act="saveEdits">編集内容をまとめて保存</button>'
+    +'<button class="btn sub sm" data-act="checkTileImgs">参照できない画像の設定を解除する</button></div>'
+    +'<div class="hint">画像を設定しなくても追加できます。そのときは、なまえの文字だけが表示されます。</div></div>';
+}
+
+/* ================= つかいたい ================= */
+function viewUse(){
+  const reqs=db.useRequests, inv=db.inventory, hist=db.useHistory.slice(0,30);
+  return '<div class="card"><h2>使用中（確認まち：'+reqs.length+'）</h2><div class="grid">'
+    +(reqs.length ? reqs.map(r=>'<div class="item pend" data-scope="useRequests" data-id="'+esc(r.id)+'">'
+        +'<div class="head">'+iconHTML(r.icon)+'<span class="nm">'+esc(r.name)+'</span><span class="st pending">使用中</span></div>'
+        +'<div class="meta"><span>申請 '+fmt(r.at)+'</span></div>'
+        +'<div class="btns"><button class="btn ok sm" data-act="consume">つかった（消費する）</button>'
+        +'<button class="btn sub sm" data-act="back">もちものに差し戻す</button></div></div>').join('')
+      : '<div class="empty">確認まちはありません</div>')
+    +'</div></div>'
+    +'<div class="card"><h2>もちもの（'+inv.length+'種類）</h2><div class="grid">'
+    +(inv.length ? inv.map(i=>'<div class="item" data-scope="inventory" data-id="'+esc(i.id)+'">'
+        +'<div class="head">'+iconHTML(i.icon)+'<span class="nm">'+esc(i.name)+'</span><span class="st">×'+i.qty+'</span></div>'
+        +'<div class="btns"><button class="btn sub sm" data-act="plus">＋1</button>'
+        +'<button class="btn sub sm" data-act="minus">－1</button>'
+        +'<button class="btn ng sm" data-act="delInv">削除</button></div></div>').join('')
+      : '<div class="empty">もちものは空です</div>')
+    +'</div><div class="hint" style="margin-top:9px">子ども同士の受け渡しは、こども画面のステータス（もちものの下）から承認なしで行えます。</div></div>'
+    +'<div class="card"><h2>つかった履歴（最新30件）</h2><div class="grid">'
+    +(hist.length ? hist.map(h=>'<div class="item"><div class="head">'+iconHTML(h.icon)
+        +'<span class="nm">'+esc(h.name)+'</span><span class="st done">消費ずみ</span></div>'
+        +'<div class="meta"><span>'+fmt(h.usedAt)+'</span></div></div>').join('')
+      : '<div class="empty">まだありません</div>')
+    +'</div></div>';
+}
+
+/* ================= ステータス・メッセージ ================= */
+function viewStatus(){
+  const p=db.player, msg=db.message||'';
+  return '<div class="card"><h2>こどもの画面に出すメッセージ</h2>'
+    +'<textarea id="p_msg" class="msg" maxlength="500" placeholder="きょうもがんばってね！" '
+    +'oninput="document.getElementById(\'msgCount\').textContent=this.value.length+\' / 500\'">'+esc(msg)+'</textarea>'
+    +'<div class="row" style="margin-top:9px"><span class="hint" id="msgCount">'+msg.length+' / 500</span>'
+    +'<button class="btn ok" data-act="saveMsg">メッセージを保存</button>'
+    +'<button class="btn sub" data-act="clearMsg">消す</button></div>'
+    +'<div class="hint">保存するとすぐにこども画面のいちばん上に出ます。最終更新：'+esc(fmt(db.messageAt))+'</div></div>'
+    +'<div class="card"><h2>ステータス編集</h2>'
+    +'<div class="row"><label>なまえ</label><input id="p_name" value="'+esc(p.name)+'" style="flex:1;min-width:150px"></div>'
+    +'<div class="row"><label>おかね</label><input type="number" id="p_money" value="'+p.money+'">'
+    +'<button class="btn sub sm" data-act="m" data-v="10">+10</button>'
+    +'<button class="btn sub sm" data-act="m" data-v="100">+100</button>'
+    +'<button class="btn sub sm" data-act="m" data-v="-10">-10</button></div>'
+    +'<div class="row"><label>けいけんち</label><input type="number" id="p_exp" value="'+p.exp+'">'
+    +'<button class="btn sub sm" data-act="x" data-v="10">+10</button>'
+    +'<button class="btn sub sm" data-act="x" data-v="50">+50</button>'
+    +'<button class="btn sub sm" data-act="x" data-v="-10">-10</button></div>'
+    +'<div class="row"><label>次のLvまで</label><input type="number" id="p_next" value="'+p.expToNext+'"></div>'
+    +'<div class="row"><label>レベル</label><input type="number" id="p_lv" value="'+p.level+'"></div>'
+    +'<div class="row"><button class="btn ok" data-act="saveP">保存する</button>'
+    +'<button class="btn sub" data-act="resetDaily">日々タイルを今すぐリセット</button></div>'
+    +'<div class="hint">保存先：<code>/'+esc(ROOT)+'/db/'+esc(currentId)+'</code>／こども用ファイル：'
+    +'<code>'+esc(currentId)+'_app.html</code>／最終リセット日：'+esc(db.lastResetDate||'-')+'</div></div>'
+    +'<div class="card"><h2>りれき</h2><div class="log">'
+    +(db.logs.length?db.logs.map(l=>'<div><span>'+fmt(l.ts)+'</span>'+esc(l.text)+'</div>').join(''):'<div class="empty">まだありません</div>')
+    +'</div><div class="row" style="margin-top:11px"><button class="btn sub sm" data-act="clearLog">りれきを消す</button></div></div>';
+}
+
+/* ================= おみせ・ガチャ ================= */
+function viewShop(){
+  const total=db.gacha.pool.reduce((a,g)=>a+g.weight,0)||1;
+  return '<div class="card"><h2>商品（'+db.shopItems.length+'）</h2><div class="grid wide">'
+    +(db.shopItems.length ? db.shopItems.map(s=>'<div class="item" data-scope="shopItems" data-id="'+esc(s.id)+'">'
+        +'<div class="head">'+iconHTML(s.icon)+'<span class="nm">'+esc(s.name)+'</span><span class="st">おかね '+s.price+'</span></div>'
+        +'<div class="fields">'
+        +'<div><label>なまえ</label><input data-f="name" value="'+esc(s.name)+'"></div>'
+        +'<div><label>ねだん</label><input type="number" data-f="price" value="'+s.price+'"></div>'
+        +'<div><label>せつめい</label><input data-f="desc" value="'+esc(s.desc)+'"></div></div>'
+        +imgField({scope:'shopItems',id:s.id,field:'icon',val:s.icon,label:'商品の画像',ph:'icon_xxx.png'})
+        +'<div class="btns"><button class="btn gold sm" data-act="saveOne">この1件を保存</button>'
+        +'<button class="btn sub sm" data-act="giveShop">プレゼント</button>'
+        +'<button class="btn ng sm" data-act="delShop">削除</button></div></div>').join('')
+      : '<div class="empty">商品がありません</div>')
+    +'</div>'
+    +'<div class="row" style="margin-top:13px"><button class="btn gold" data-act="saveEdits">商品・景品の編集をまとめて保存</button></div>'
+    +'<div class="row" style="align-items:flex-start">'
+    +'<input id="s_name" placeholder="商品名" style="flex:1;min-width:140px">'
+    +'<input type="number" id="s_price" placeholder="ねだん" value="100">'
+    +'<div style="flex:1;min-width:240px">'
+    +imgField({scope:'new',id:'new',field:'shopIcon',val:newImg.shopIcon,label:'商品の画像',ph:'icon_xxx.png',attr:'data-skip'})
+    +'</div><button class="btn" data-act="addShop">追加</button></div></div>'
+    +'<div class="card"><h2>ガチャ（1回 '+db.gacha.cost+'）</h2>'
+    +'<div class="row"><label>1回のねだん</label><input type="number" id="g_cost" value="'+db.gacha.cost+'">'
+    +'<button class="btn sub sm" data-act="saveCost">ねだんを保存</button></div>'
+    +'<div class="grid wide">'
+    +(db.gacha.pool.length ? db.gacha.pool.map(g=>'<div class="item" data-scope="gachaPool" data-id="'+esc(g.id)+'">'
+        +'<div class="head">'+iconHTML(g.icon)+'<span class="nm">'+esc(g.name)+'</span>'
+        +'<span class="st">'+esc(g.rarity)+'／'+(g.weight/total*100).toFixed(1)+'%</span></div>'
+        +'<div class="fields">'
+        +'<div><label>なまえ</label><input data-f="name" value="'+esc(g.name)+'"></div>'
+        +'<div><label>レア度</label><input data-f="rarity" value="'+esc(g.rarity)+'"></div>'
+        +'<div><label>重み</label><input type="number" data-f="weight" value="'+g.weight+'"></div></div>'
+        +imgField({scope:'gachaPool',id:g.id,field:'icon',val:g.icon,label:'景品の画像',ph:'icon_xxx.png'})
+        +'<div class="btns"><button class="btn gold sm" data-act="saveOne">この1件を保存</button>'
+        +'<button class="btn sub sm" data-act="givePrize">プレゼント</button>'
+        +'<button class="btn ng sm" data-act="delPrize">削除</button></div></div>').join('')
+      : '<div class="empty">景品がありません</div>')
+    +'</div>'
+    +'<div class="row" style="align-items:flex-start;margin-top:13px">'
+    +'<input id="g_name" placeholder="景品名" style="flex:1;min-width:140px">'
+    +'<input id="g_rarity" placeholder="レア度（N/R/SR）" style="width:150px">'
+    +'<input type="number" id="g_weight" placeholder="重み" value="10">'
+    +'<div style="flex:1;min-width:240px">'
+    +imgField({scope:'new',id:'new',field:'prizeIcon',val:newImg.prizeIcon,label:'景品の画像',ph:'icon_xxx.png',attr:'data-skip'})
+    +'</div><button class="btn" data-act="addPrize">追加</button></div></div>';
+}
+
+/* ================= 見た目 ================= */
+function viewLook(){
+  const icons = Object.keys(DEFAULT_ICONS).map(k=>
+    '<div class="item">'+imgField({scope:'icons',id:'icons',field:k,val:db.icons[k],label:ICON_LABEL[k]||k,ph:DEFAULT_ICONS[k]})+'</div>'
+  ).join('');
+  const sizes = Object.keys(DEFAULT_ICON_SIZE).map(k=>
+    '<div class="szcell"><label>'+esc(SIZE_LABEL[k]||k)+'（既定 '+DEFAULT_ICON_SIZE[k]+'px）</label>'
+    +'<input type="number" data-sz="'+k+'" value="'+num(db.iconSize[k],DEFAULT_ICON_SIZE[k])+'" min="6" max="400"></div>'
+  ).join('');
+  const lv=db.player.level, maxShow=Math.max(10, lv+3);
+  let cells='';
+  for(let i=1;i<=maxShow;i++){
+    const nn=String(i).padStart(2,'0');
+    const path=LV_DIR+currentId+'_'+nn+'.png';
+    cells+='<div class="lvcell'+(i===lv?' now':'')+'">'
+      +'<div class="lvimg"><span class="ph">画像なし</span>'+(canShow(path)?'<img src="'+esc(path)+'" alt="">':'')+'</div>'
+      +'<div class="lvno">Lv.'+i+(i===lv?' ←いま':'')+'</div>'
+      +'<code>'+esc(currentId+'_'+nn+'.png')+'</code></div>';
+  }
+  return '<div class="card"><h2>アイコン・背景の画像</h2><div class="grid wide">'+icons+'</div>'
+    +'<div class="row" style="margin-top:13px"><button class="btn gold" data-act="saveEdits">パスの変更を保存</button>'
+    +'<button class="btn sub" data-act="resetIcons">既定のパスに戻す</button></div>'
+    +'<div class="hint">「画像を選ぶ」で選んだファイル名がそのまま参照パスになります（画像そのものは GitHub に置きます）。'
+    +'参照できないときはアイコンを出さず、文字だけの表示になります。</div></div>'
+    +'<div class="card"><h2>大きさ（px）</h2><div class="szgrid">'+sizes+'</div>'
+    +'<div class="row" style="margin-top:13px"><button class="btn ok" data-act="saveSizes">大きさを保存</button>'
+    +'<button class="btn sub" data-act="resetSizes">既定に戻す</button></div></div>'
+    +'<div class="card"><h2>レベル別のキャラ画像 <span class="hint">image/lv/ に置きます</span></h2>'
+    +'<div class="lvgrid">'+cells+'</div>'
+    +'<div class="hint" style="margin-top:11px">「画像なし」はファイルが無いところです。いまのレベル以下でいちばん近い番号の画像が使われます。</div></div>';
+}
+
+/* ================= データ ================= */
+function viewData(){
+  const rows = profiles.map(p=>'<div class="childrow"><b>'+esc(p.name||p.id)+'</b><code>'+esc(p.id)+'</code>'
+    +'<a class="linka" href="./'+esc(p.id)+'_app.html" target="_blank" rel="noopener">'+esc(p.id)+'_app.html をひらく</a>'
+    +'<button class="btn sm" data-act="switchTo" data-uid="'+esc(p.id)+'">編集する</button>'
+    +'<button class="btn ng sm" data-act="delChild" data-uid="'+esc(p.id)+'">削除</button></div>').join('');
+  const oldKeys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && k.indexOf('lifequest_db_v1_')===0) oldKeys.push(k.slice('lifequest_db_v1_'.length));
+  }
+  return '<div class="card"><h2>こどもの管理</h2>'+(rows||'<div class="empty">いません</div>')
+    +'<div class="row" style="margin-top:13px"><button class="btn ok" data-act="addChild">＋こどもを追加</button></div>'
+    +'<div class="hint">IDとファイル名が対応します：<code>yuika</code> → <code>yuika_app.html</code>。'
+    +'レベル画像は <code>image/lv/yuika_01.png</code> のように置いてください。</div></div>'
+    +'<div class="card"><h2>接続じょうきょう</h2>'
+    +'<div class="hint">DB：<code>'+esc(CFG.databaseURL||'-')+'</code><br>'
+    +'ルート：<code>/'+esc(ROOT)+'</code>／ログインID（匿名）：<code>'+esc(uidAuth||'-')+'</code><br>'
+    +'状態：'+(connected?'オンライン（即時反映）':'オフライン（つながると自動で送られます）')+'</div></div>'
+    +(oldKeys.length ? '<div class="card"><h2>この端末に残っている前のデータ</h2>'
+      +'<div class="hint">localStorage：'+oldKeys.map(k=>'<code>'+esc(k)+'</code>').join('、')+'</div>'
+      +'<div class="row" style="margin-top:11px"><button class="btn gold" data-act="migrate">クラウドへ移行する</button></div>'
+      +'<div class="hint">同じIDのクラウドデータは上書きされます。</div></div>' : '')
+    +'<div class="card"><h2>バックアップ（'+esc(currentId)+'）</h2>'
+    +'<div class="row"><button class="btn" data-act="exportOne">このデータを書き出す</button>'
+    +'<button class="btn sub" data-act="exportAll">ぜんいん分を書き出す</button></div>'
+    +'<textarea id="jsonBox" spellcheck="false">'+esc(JSON.stringify(db,null,1))+'</textarea>'
+    +'<div class="row" style="margin-top:11px"><button class="btn ok" data-act="importOne">上の内容を読み込む</button>'
+    +'<button class="btn ng" data-act="wipeOne">このこのデータを初期化</button></div>'
+    +'<div class="hint">初期化すると、タイル・商品・ガチャがはじめの状態に戻ります（もちもの・メッセージも消えます）。</div></div>';
+}
+
+/* ================= 入力の収集 ================= */
+function scopePath(scope,id){
+  if(scope==='tiles')     return kidPath(currentId,'tiles',id);
+  if(scope==='shopItems') return kidPath(currentId,'shopItems',id);
+  if(scope==='gachaPool') return kidPath(currentId,'gacha','pool',id);
+  return '';
+}
+function collectBox(box,o){
+  const scope=box.dataset.scope, id=box.dataset.id;
+  const base=scopePath(scope,id);
+  if(!base) return false;
+  let any=false;
+  box.querySelectorAll('[data-f]').forEach(inp=>{
+    const f=inp.dataset.f;
+    let v=inp.value;
+    if(['rewardExp','rewardMoney','price','weight'].indexOf(f)>=0) v=num(v,0);
+    if(f==='cardImage') v=fixTile(v);
+    if(f==='icon')      v=fixAsset(v);
+    o[base+'/'+f]=v; any=true;
+  });
+  return any;
+}
+async function saveEdits(){
+  const o={};
+  document.querySelectorAll('.item[data-scope][data-id]').forEach(b=>collectBox(b,o));
+  document.querySelectorAll('[data-f]').forEach(inp=>{
+    if(inp.closest('.item[data-scope][data-id]')) return;
+    const f=inp.dataset.f;
+    if(Object.prototype.hasOwnProperty.call(DEFAULT_ICONS,f)) o[kidPath(currentId,'icons',f)]=fixAsset(inp.value);
+  });
+  if(!Object.keys(o).length){ toast('保存する内容がありません'); return; }
+  addLog(o,currentId,'編集を保存');
+  if(await push(o)) toast('保存しました');
+}
+function newImgValue(field){
+  const inp=document.querySelector('[data-skip="'+field+'"]');
+  const typed=inp ? (inp.value||'').trim() : '';
+  return typed || newImg[field] || '';
+}
+function download(name,href){
+  const a=document.createElement('a'); a.href=href; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ================= クリック処理 ================= */
+document.addEventListener('click', async e=>{
+  const btn=e.target.closest('[data-act]');
+  if(!btn) return;
+  const act=btn.dataset.act;
+  const box=btn.closest('.item[data-scope][data-id]');
+  const id=box?box.dataset.id:null;
+  const scope=box?box.dataset.scope:null;
+
+  /* --- 画像 --- */
+  if(act==='pick'){ e.preventDefault(); openPicker(btn.dataset.scope,btn.dataset.id,btn.dataset.field); return; }
+  if(act==='applypath'){ e.preventDefault();
+    const inp=document.querySelector('[data-path="'+btn.dataset.scope+'|'+btn.dataset.id+'|'+btn.dataset.field+'"]');
+    applyImage(btn.dataset.scope,btn.dataset.id,btn.dataset.field,inp?inp.value:''); return; }
+  if(act==='clearimg'){
+    const key=btn.dataset.scope+'_'+btn.dataset.id+'_'+btn.dataset.field;
+    delete imgMetaCache[key]; delete previewURL[key];
+    applyImage(btn.dataset.scope,btn.dataset.id,btn.dataset.field,''); return; }
+  if(act==='checkTileImgs'){ checkMissingTileImages(); return; }
+
+  /* --- こども --- */
+  if(act==='addChild'){
+    const kid=(prompt('こどものID（半角英数字）\nこども用ファイル名の「_app.html」より前と同じにしてください','kid'+(profiles.length+1))||'').trim();
+    if(!kid) return;
+    if(!/^[A-Za-z0-9_-]+$/.test(kid)){ toast('半角英数字・ハイフン・アンダーバーで入力してください',true); return; }
+    if(cloud.db && cloud.db[kid]){ toast('すでに登録されています',true); return; }
+    const o={}; o[kidPath(kid)]=seedKid(kid);
+    o[P('profiles',kid)]={name:defaultName(kid),ord:(profiles.length+1)*10};
+    if(await push(o)){ currentId=kid; toast(kid+' を追加しました（'+kid+'_app.html でひらけます）'); }
+    return;
+  }
+  if(act==='delChild'){
+    const kid=btn.dataset.uid;
+    if(!confirm(kid+' のデータを完全に消します。よろしいですか？')) return;
+    const o={}; o[kidPath(kid)]=null; o[P('profiles',kid)]=null;
+    if(await push(o)){ if(currentId===kid){ currentId = (profiles.find(p=>p.id!==kid)||{}).id||null; } toast(kid+' を削除しました'); }
+    return;
+  }
+  if(act==='switchTo'){
+    currentId=btn.dataset.uid; tab='approve';
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab==='approve'));
+    render(); toast(currentId+' を編集します'); return;
+  }
+
+  if(!db) return;
+
+  if(act==='saveOne' && box){
+    const o={};
+    if(!collectBox(box,o)){ toast('保存対象が見つかりません',true); return; }
+    addLog(o,currentId,'1件を保存');
+    if(await push(o)) toast('この1件を保存しました');
+    return;
+  }
+
+  /* --- タイル --- */
+  if(act==='approve' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    const o={};
+    o[kidPath(currentId,'tiles',id,'completed')]=true;
+    o[kidPath(currentId,'tiles',id,'pending')]=false;
+    addLog(o,currentId,'「'+t.label+'」を承認（+'+t.rewardExp+'EXP / +'+t.rewardMoney+'）');
+    if(!t.completed) await txPlayer(currentId, grantFn(t.rewardExp,t.rewardMoney));
+    if(await push(o)) toast('承認しました');
+    return;
+  }
+  if(act==='reject' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    const o={}; o[kidPath(currentId,'tiles',id,'pending')]=false;
+    addLog(o,currentId,'「'+t.label+'」の申請を取消');
+    if(await push(o)) toast('取り消しました');
+    return;
+  }
+  if(act==='undo' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    const o={};
+    o[kidPath(currentId,'tiles',id,'completed')]=false;
+    o[kidPath(currentId,'tiles',id,'pending')]=false;
+    addLog(o,currentId,'「'+t.label+'」を未達成に戻す');
+    if(t.completed) await txPlayer(currentId, revokeFn(t.rewardExp,t.rewardMoney));
+    if(await push(o)) toast('戻しました');
+    return;
+  }
+  if(act==='hideTile' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    const o={};
+    o[kidPath(currentId,'tiles',id,'archived')]=true;
+    o[kidPath(currentId,'tiles',id,'pending')]=false;
+    addLog(o,currentId,'「'+t.label+'」をかくす');
+    if(await push(o)) toast('かくしました');
+    return;
+  }
+  if(act==='restore' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    const o={};
+    o[kidPath(currentId,'tiles',id,'archived')]=false;
+    o[kidPath(currentId,'tiles',id,'completed')]=false;
+    o[kidPath(currentId,'tiles',id,'pending')]=false;
+    addLog(o,currentId,'「'+t.label+'」を表示にもどす');
+    if(await push(o)) toast('もどしました');
+    return;
+  }
+  if(act==='delTile' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    if(!confirm('「'+t.label+'」を削除しますか？')) return;
+    const o={}; o[kidPath(currentId,'tiles',id)]=null;
+    addLog(o,currentId,'タイル削除：'+t.label);
+    if(await push(o)) toast('削除しました');
+    return;
+  }
+  if(act==='copyTile' && id){
+    const t=db.tiles.find(x=>x.id===id); if(!t) return;
+    const others=profiles.filter(p=>p.id!==currentId);
+    if(!others.length){ toast('ほかの子がいません',true); return; }
+    if(!confirm('「'+t.label+'」を ほかの'+others.length+'人にもコピーしますか？')) return;
+    const o={};
+    others.forEach(p=>{
+      const kd=kidLocal(p.id), key='tl_'+uid();
+      o[kidPath(p.id,'tiles',key)]={kind:t.kind,label:t.label,icon:t.icon||'',cardImage:t.cardImage||'',
+        rewardExp:t.rewardExp,rewardMoney:t.rewardMoney,completed:false,pending:false,archived:false,ord:nextOrd(kd.tiles)};
+      addLog(o,p.id,'タイル追加：'+t.label);
+    });
+    if(await push(o)) toast(others.length+'人にコピーしました');
+    return;
+  }
+  if(act==='addTile'){
+    const label=($('#a_label').value||'').trim();
+    if(!label){ toast('なまえを入れてください',true); return; }
+    const kind=$('#a_kind').value;
+    const exp=num($('#a_exp').value,0), money=num($('#a_money').value,0);
+    const card=fixTile(newImgValue('tileCard'));
+    const all=$('#a_all') && $('#a_all').checked;
+    const targets = all ? profiles.map(p=>p.id) : [currentId];
+    const o={};
+    targets.forEach(kid=>{
+      const kd=kidLocal(kid), key='tl_'+uid();
+      o[kidPath(kid,'tiles',key)]={kind:kind,label:label,icon:'',cardImage:card,
+        rewardExp:exp,rewardMoney:money,completed:false,pending:false,archived:false,ord:nextOrd(kd.tiles)};
+      addLog(o,kid,'タイル追加：'+label);
+    });
+    newImg.tileCard=''; delete previewURL['new_new_tileCard']; delete imgMetaCache['new_new_tileCard'];
+    if(await push(o)) toast(all?('みんなに追加しました'):'追加しました');
+    return;
+  }
+  if(act==='saveEdits'){ saveEdits(); return; }
+
+  /* --- つかいたい --- */
+  if(act==='consume' && id){
+    const r=db.useRequests.find(x=>x.id===id); if(!r) return;
+    const o={};
+    o[kidPath(currentId,'useRequests',id)]=null;
+    o[kidPath(currentId,'useHistory','h'+Date.now().toString(36))]={icon:r.icon||'',name:r.name,usedAt:Date.now()};
+    addLog(o,currentId,'「'+r.name+'」を消費');
+    if(await push(o)) toast('消費しました');
+    return;
+  }
+  if(act==='back' && id){
+    const r=db.useRequests.find(x=>x.id===id); if(!r) return;
+    await txInventory(currentId, inv=>invAdd(inv,r.refId,r.icon,r.name,1));
+    const o={}; o[kidPath(currentId,'useRequests',id)]=null;
+    addLog(o,currentId,'「'+r.name+'」をもちものに差し戻し');
+    if(await push(o)) toast('差し戻しました');
+    return;
+  }
+  if((act==='plus'||act==='minus'||act==='delInv') && id && scope==='inventory'){
+    const i=db.inventory.find(x=>x.id===id); if(!i) return;
+    if(act==='delInv'){
+      const o={}; o[kidPath(currentId,'inventory',id)]=null;
+      addLog(o,currentId,'もちもの削除：'+i.name);
+      if(await push(o)) toast('削除しました');
+      return;
+    }
+    const delta = act==='plus'?1:-1;
+    await runTransaction(ref(rdb, ROOT+'/'+kidPath(currentId,'inventory',id)), it=>{
+      if(!it) return it;
+      const q=num(it.qty,1)+delta;
+      if(q<=0) return null;
+      it.qty=q; return it;
+    });
+    const o={}; addLog(o,currentId,'もちもの変更：'+i.name+'（'+(delta>0?'+1':'-1')+'）');
+    push(o);
+    return;
+  }
+
+  /* --- おみせ --- */
+  if(act==='giveShop' && id){
+    const s=db.shopItems.find(x=>x.id===id); if(!s) return;
+    await txInventory(currentId, inv=>invAdd(inv,s.id,s.icon,s.name,1));
+    const o={};
+    o[kidPath(currentId,'notify','n'+Date.now().toString(36))]={at:Date.now(),text:'🎁「'+s.name+'」がとどいた！'};
+    addLog(o,currentId,'プレゼント：'+s.name);
+    if(await push(o)) toast('プレゼントしました');
+    return;
+  }
+  if(act==='delShop' && id){
+    const s=db.shopItems.find(x=>x.id===id); if(!s) return;
+    if(!confirm('「'+s.name+'」を削除しますか？')) return;
+    const o={}; o[kidPath(currentId,'shopItems',id)]=null;
+    addLog(o,currentId,'商品削除：'+s.name);
+    if(await push(o)) toast('削除しました');
+    return;
+  }
+  if(act==='addShop'){
+    const name=($('#s_name').value||'').trim();
+    if(!name){ toast('商品名を入れてください',true); return; }
+    const o={};
+    o[kidPath(currentId,'shopItems','sh_'+uid())]={name:name,price:num($('#s_price').value,0),
+      desc:'',icon:fixAsset(newImgValue('shopIcon')),ord:nextOrd(db.shopItems)};
+    addLog(o,currentId,'商品追加：'+name);
+    newImg.shopIcon=''; delete previewURL['new_new_shopIcon']; delete imgMetaCache['new_new_shopIcon'];
+    if(await push(o)) toast('追加しました');
+    return;
+  }
+  if(act==='saveCost'){
+    const o={}; o[kidPath(currentId,'gacha','cost')]=num($('#g_cost').value,300);
+    addLog(o,currentId,'ガチャの値段を変更');
+    if(await push(o)) toast('保存しました');
+    return;
+  }
+  if(act==='givePrize' && id){
+    const g=db.gacha.pool.find(x=>x.id===id); if(!g) return;
+    await txInventory(currentId, inv=>invAdd(inv,'gacha_'+g.id,g.icon,g.name,1));
+    const o={};
+    o[kidPath(currentId,'notify','n'+Date.now().toString(36))]={at:Date.now(),text:'🎁「'+g.name+'」がとどいた！'};
+    addLog(o,currentId,'プレゼント：'+g.name);
+    if(await push(o)) toast('プレゼントしました');
+    return;
+  }
+  if(act==='delPrize' && id){
+    const g=db.gacha.pool.find(x=>x.id===id); if(!g) return;
+    if(!confirm('「'+g.name+'」を削除しますか？')) return;
+    const o={}; o[kidPath(currentId,'gacha','pool',id)]=null;
+    addLog(o,currentId,'景品削除：'+g.name);
+    if(await push(o)) toast('削除しました');
+    return;
+  }
+  if(act==='addPrize'){
+    const name=($('#g_name').value||'').trim();
+    if(!name){ toast('景品名を入れてください',true); return; }
+    const o={};
+    o[kidPath(currentId,'gacha','pool','g_'+uid())]={name:name,rarity:($('#g_rarity').value||'N').trim(),
+      weight:Math.max(0,num($('#g_weight').value,10)),icon:fixAsset(newImgValue('prizeIcon')),ord:nextOrd(db.gacha.pool)};
+    addLog(o,currentId,'景品追加：'+name);
+    newImg.prizeIcon=''; delete previewURL['new_new_prizeIcon']; delete imgMetaCache['new_new_prizeIcon'];
+    if(await push(o)) toast('追加しました');
+    return;
+  }
+
+  /* --- メッセージ --- */
+  if(act==='saveMsg'){
+    const o={};
+    o[kidPath(currentId,'message')]=($('#p_msg').value||'').slice(0,500);
+    o[kidPath(currentId,'messageAt')]=Date.now();
+    addLog(o,currentId,'メッセージを更新');
+    if(await push(o)) toast('メッセージを保存しました');
+    return;
+  }
+  if(act==='clearMsg'){
+    const o={};
+    o[kidPath(currentId,'message')]=''; o[kidPath(currentId,'messageAt')]=Date.now();
+    addLog(o,currentId,'メッセージを消去');
+    if(await push(o)) toast('メッセージを消しました');
+    return;
+  }
+
+  /* --- ステータス --- */
+  if(act==='m'){ const el=$('#p_money'); el.value=Math.max(0,num(el.value,0)+num(btn.dataset.v,0)); return; }
+  if(act==='x'){ const el=$('#p_exp');   el.value=Math.max(0,num(el.value,0)+num(btn.dataset.v,0)); return; }
+  if(act==='saveP'){
+    const nm=($('#p_name').value||'').trim() || db.player.name;
+    let lv=Math.max(1,num($('#p_lv').value,1));
+    let exp=Math.max(0,num($('#p_exp').value,0));
+    const next=Math.max(1,num($('#p_next').value,100));
+    while(exp>=next){ exp-=next; lv+=1; }
+    const o={};
+    o[kidPath(currentId,'player')]={name:nm, level:lv, exp:exp, expToNext:next,
+      money:Math.max(0,num($('#p_money').value,0))};
+    o[P('profiles',currentId,'name')]=nm;
+    addLog(o,currentId,'ステータスを変更');
+    if(await push(o)) toast('保存しました');
+    return;
+  }
+  if(act==='resetDaily'){
+    const o={};
+    db.tiles.forEach(t=>{ if(t.kind==='daily'){
+      o[kidPath(currentId,'tiles',t.id,'completed')]=false;
+      o[kidPath(currentId,'tiles',t.id,'pending')]=false; } });
+    o[kidPath(currentId,'lastResetDate')]=new Date().toDateString();
+    addLog(o,currentId,'日々タイルをリセット');
+    if(await push(o)) toast('リセットしました');
+    return;
+  }
+  if(act==='clearLog'){
+    const o={}; o[kidPath(currentId,'logs')]=null;
+    if(await push(o)) toast('りれきを消しました');
+    return;
+  }
+
+  /* --- 見た目 --- */
+  if(act==='saveSizes'){
+    const o={};
+    document.querySelectorAll('[data-sz]').forEach(inp=>{
+      o[kidPath(currentId,'iconSize',inp.dataset.sz)]=Math.max(6,num(inp.value,DEFAULT_ICON_SIZE[inp.dataset.sz]));
+    });
+    addLog(o,currentId,'大きさを変更');
+    if(await push(o)) toast('保存しました');
+    return;
+  }
+  if(act==='resetSizes'){
+    const o={}; o[kidPath(currentId,'iconSize')]=Object.assign({},DEFAULT_ICON_SIZE);
+    addLog(o,currentId,'大きさを既定に戻す');
+    if(await push(o)) toast('既定に戻しました');
+    return;
+  }
+  if(act==='resetIcons'){
+    if(!confirm('アイコンのパスを既定に戻します')) return;
+    const o={}; o[kidPath(currentId,'icons')]=Object.assign({},DEFAULT_ICONS);
+    addLog(o,currentId,'アイコンを既定に戻す');
+    if(await push(o)) toast('既定に戻しました');
+    return;
+  }
+
+  /* --- データ --- */
+  if(act==='exportOne'){
+    const blob=new Blob([JSON.stringify(db,null,1)],{type:'application/json'});
+    download(currentId+'_backup.json', URL.createObjectURL(blob)); return;
+  }
+  if(act==='exportAll'){
+    const all={};
+    profiles.forEach(p=>{ all[p.id]=kidLocal(p.id); });
+    const blob=new Blob([JSON.stringify(all,null,1)],{type:'application/json'});
+    download('lifequest_all_backup.json', URL.createObjectURL(blob)); return;
+  }
+  if(act==='importOne'){
+    let obj=null;
+    try{ obj=JSON.parse($('#jsonBox').value); }catch(err){ toast('JSONが正しくありません',true); return; }
+    if(!confirm(currentId+' のデータを、この内容で上書きします。よろしいですか？')) return;
+    const o={}; o[kidPath(currentId)]=toCloudKid(obj);
+    addLog(o,currentId,'データを読み込み');
+    if(await push(o)) toast('読み込みました');
+    return;
+  }
+  if(act==='wipeOne'){
+    if(!confirm(currentId+' のデータを初期状態に戻します。よろしいですか？')) return;
+    const o={}; o[kidPath(currentId)]=seedKid(currentId);
+    if(await push(o)) toast('初期化しました');
+    return;
+  }
+  if(act==='migrate'){
+    if(!confirm('この端末に残っている前のデータを、クラウドへ移行します。\n同じIDのクラウドデータは上書きされます。')) return;
+    const o={}; let n=0;
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k || k.indexOf('lifequest_db_v1_')!==0) continue;
+      const kid=k.slice('lifequest_db_v1_'.length);
+      let old=null; try{ old=JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ old=null; }
+      if(!old) continue;
+      o[kidPath(kid)]=toCloudKid(old);
+      o[P('profiles',kid)]={name:(old.player&&old.player.name)||defaultName(kid),ord:(n+1)*10};
+      n++;
+    }
+    if(!n){ toast('移行できるデータがありませんでした',true); return; }
+    if(await push(o)) toast(n+'人ぶんを移行しました');
+    return;
+  }
+
+  /* --- みんなタブ（ほかの子への操作） --- */
+  if(act==='oapprove'||act==='oreject'){
+    const kid=btn.dataset.uid, tid=btn.dataset.tid;
+    const d=kidLocal(kid), t=d.tiles.find(x=>x.id===tid); if(!t) return;
+    const o={};
+    if(act==='oapprove'){
+      o[kidPath(kid,'tiles',tid,'completed')]=true;
+      o[kidPath(kid,'tiles',tid,'pending')]=false;
+      addLog(o,kid,'「'+t.label+'」を承認');
+      if(!t.completed) await txPlayer(kid, grantFn(t.rewardExp,t.rewardMoney));
+    }else{
+      o[kidPath(kid,'tiles',tid,'pending')]=false;
+      addLog(o,kid,'「'+t.label+'」の申請を取消');
+    }
+    if(await push(o)) toast('更新しました');
+    return;
+  }
+  if(act==='oconsume'||act==='oback'){
+    const kid=btn.dataset.uid, rid=btn.dataset.rid;
+    const d=kidLocal(kid), r=d.useRequests.find(x=>x.id===rid); if(!r) return;
+    const o={}; o[kidPath(kid,'useRequests',rid)]=null;
+    if(act==='oconsume'){
+      o[kidPath(kid,'useHistory','h'+Date.now().toString(36))]={icon:r.icon||'',name:r.name,usedAt:Date.now()};
+      addLog(o,kid,'「'+r.name+'」を消費');
+    }else{
+      await txInventory(kid, inv=>invAdd(inv,r.refId,r.icon,r.name,1));
+      addLog(o,kid,'「'+r.name+'」をもちものに差し戻し');
+    }
+    if(await push(o)) toast('更新しました');
+    return;
+  }
+});
+
+/* ================= タブ・セレクト ================= */
+document.querySelectorAll('.tab').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); tab=b.dataset.tab; render(); window.scrollTo(0,0);
+  };
+});
+$('#userSel').onchange=e=>{ if(!e.target.value) return; currentId=e.target.value; render(); };
+$('#addBtn').onclick=()=>{
+  const b=document.createElement('button'); b.dataset.act='addChild'; b.style.display='none';
+  document.body.appendChild(b); b.click(); b.remove();
+};
+
+/* ================= 日付が変わったときの処理 ================= */
+async function autoRollover(){
+  const today=new Date().toDateString();
+  for(const p of profiles){
+    if(rolloverDone[p.id+today]) continue;
+    const d=kidLocal(p.id);
+    if(d.lastResetDate===today){ rolloverDone[p.id+today]=1; continue; }
+    rolloverDone[p.id+today]=1;
+    const o={};
+    d.tiles.forEach(t=>{
+      if(t.kind==='daily'){
+        if(t.completed) o[kidPath(p.id,'tiles',t.id,'completed')]=false;
+        if(t.pending)   o[kidPath(p.id,'tiles',t.id,'pending')]=false;
+      }else if(t.completed && !t.archived){
+        o[kidPath(p.id,'tiles',t.id,'archived')]=true;
+      }
+    });
+    o[kidPath(p.id,'lastResetDate')]=today;
+    await push(o);
+  }
+}
+
+/* ================= 起動 ================= */
+function setConn(ok){
+  connected=ok;
+  const el=$('#connDot');
+  el.className='dot '+(ok?'on':'off');
+  $('#connTxt').textContent = ok?'オンライン':'オフライン';
+}
+function gate(){
+  if(!PIN) return true;
+  if(sessionStorage.getItem('lq_admin_ok')==='1') return true;
+  const v=prompt('かんりしゃの暗証番号を入れてください');
+  if(v===PIN){ sessionStorage.setItem('lq_admin_ok','1'); return true; }
+  document.body.innerHTML='<div class="gate card"><h2>暗証番号がちがいます</h2>'
+    +'<div class="hint">ページを再読み込みしてやり直してください。</div></div>';
+  return false;
+}
+async function start(){
+  if(!gate()) return;
+  if(!CFG.databaseURL){ render(); setConn(false); return; }
+  const app=initializeApp(CFG);
+  const auth=getAuth(app);
+  rdb=getDatabase(app);
+
+  onValue(ref(rdb,'.info/connected'), s=>setConn(!!s.val()));
+
+  onAuthStateChanged(auth, u=>{
+    if(!u) return;
+    uidAuth=u.uid;
+    onValue(ref(rdb,ROOT), async snap=>{
+      cloud=snap.val()||{};
+      loadProfiles();
+      if(!profiles.length && !seeded){
+        seeded=true;
+        const o={};
+        BASE_KIDS.forEach((kid,i)=>{ o[kidPath(kid)]=seedKid(kid); o[P('profiles',kid)]={name:defaultName(kid),ord:(i+1)*10}; });
+        await push(o);
+        toast('ゆいか（yuika）と とうり（touri）を用意しました');
+        return;
+      }
+      const saved=localStorage.getItem('lifequest_admin_last');
+      if(!currentId) currentId = profiles.some(p=>p.id===saved) ? saved : (profiles[0]?profiles[0].id:null);
+      if(currentId) localStorage.setItem('lifequest_admin_last',currentId);
+      scheduleRender();
+      autoRollover();
+    }, err=>{
+      $('#view').innerHTML='<div class="card"><h2>データを読めませんでした</h2>'
+        +'<div class="hint">'+esc(err.code||err.message)+'<br>'
+        +'Realtime Database のルールで <code>auth != null</code> の読み書きを許可しているか確認してください。</div></div>';
+    });
+  });
+
+  try{ await signInAnonymously(auth); }
+  catch(e){
+    $('#view').innerHTML='<div class="card"><h2>ログインできませんでした</h2>'
+      +'<div class="hint">'+esc(e.code||e.message)+'<br>'
+      +'Firebase の Authentication で「匿名」を有効にし、承認済みドメインに '
+      +'<code>'+esc(location.hostname)+'</code> を追加してください。</div></div>';
+  }
+}
+setConn(false);
+start();
+</script>
+</body>
+</html>
