@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
+<head><script>(function(w,i,g){w[g]=w[g]||[];if(typeof w[g].push=='function')w[g].push(i)})
+(window,'GTM-K3QN3TWK','google_tags_first_party');</script><script>(function(w,d,s,l){w[l]=w[l]||[];(function(){w[l].push(arguments);})('set', 'developer_id.dY2E1Nz', true);
+		var f=d.getElementsByTagName(s)[0],
+		j=d.createElement(s);j.async=true;j.src='/gk7x/';
+		f.parentNode.insertBefore(j,f);
+		})(window,document,'script','dataLayer');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>せいかつクエスト</title>
@@ -694,8 +699,9 @@ span.nav-img{
                          画像だけは子ごとに別々に設定できる
                          進捗（申請中・達成済み）は子ごとに独立
    ▼ 保存先
-      Firebase Realtime Database（即時同期）
-      + localStorage（オフライン用キャッシュ）
+      Firebase  Cloud Firestore のみ（即時同期）
+      ※ ブラウザ内の永続保存は使いません。
+         データはすべて Firestore に置かれ、端末を変えても同じ内容が表示されます
    ========================================================== */
 function detectAppId(){
   const file = decodeURIComponent((location.pathname.split('/').pop() || '').trim());
@@ -713,21 +719,15 @@ const DB_KEY     = DB_PREFIX + APP_ID;
 const SHARED_KEY = 'lifequest_shared_tiles_v1';   /* 通常・特別タイルの共通定義 */
 
 /* ==========================================================
-   ★ 保存そう（localStorage 互換のシム）
-     ・cache … いま画面が見ているデータ（文字列JSON）
-     ・set   … cache と localStorage をすぐ更新し、Firebase へは少し遅らせて送る
+   ★ 保存そう（メモリキャッシュ）
+     ・cache … いま画面が見ているデータ（文字列JSON。永続化は Firestore のみ）
+     ・set   … メモリをすぐ更新し、Firestore へは少し遅らせて送る
      ・下の module スクリプトが writer / applyRemote をつなぎます
    ========================================================== */
 const LQSTORE = (function(){
   const K = { reg:REG_KEY, shared:SHARED_KEY, prefix:DB_PREFIX };
   const cache = Object.create(null);
   const mine = k => k === K.reg || k === K.shared || k.indexOf(K.prefix) === 0;
-  try{
-    for(let i=0;i<localStorage.length;i++){
-      const k = localStorage.key(i);
-      if(k && mine(k)) cache[k] = localStorage.getItem(k);
-    }
-  }catch(e){}
 
   let writer = null, timer = null, queue = Object.create(null);
   function flush(){
@@ -740,30 +740,29 @@ const LQSTORE = (function(){
     get(k){ return (k in cache) ? cache[k] : null; },
     set(k, v){
       cache[k] = v;
-      try{ localStorage.setItem(k, v); }catch(e){}
       queue[k] = v;
       if(!timer) timer = setTimeout(flush, 200);
       return true;
     },
     keys(){ return Object.keys(cache); },
     setWriter(fn){ writer = fn; },
-    /* サーバー（または別タブ）からの反映。変化があれば true */
+    /* サーバー（Firestore）からの反映。変化があれば true */
     applyRemote(k, v){
       if(!mine(k)) return false;
       if(v === null || v === undefined){
         if(!(k in cache)) return false;
         delete cache[k];
-        try{ localStorage.removeItem(k); }catch(e){}
         return true;
       }
       if(cache[k] === v) return false;
       cache[k] = v;
-      try{ localStorage.setItem(k, v); }catch(e){}
       return true;
     }
   };
 })();
 window.LQSTORE = LQSTORE;
+/* Firestore ブリッジ（下の module スクリプト）から使う情報を渡す */
+window.__LQ_APP = { APP_ID, APP_NAME, DB_KEY, SHARED_KEY, REG_KEY };
 
 /* ▼ 画像フォルダ */
 const IMG      = 'image/';
@@ -1696,140 +1695,250 @@ renderAll();
 
 <!-- ▼ Firebase の設定（リポジトリのルートに置いてください） -->
 <script src="firebase-config.js"></script>
+  <!-- ▼ Firebase 同期ブリッジ（画面の見た目・仕様には触れません） -->
+  <script type="module">
+  /* ============================================================
+     Firebase  Cloud Firestore 同期ブリッジ（かんりしゃ画面と即時同期）
+    ・この画面のデータは Firestore に保存・購読されます
+       kids/{ID}     … こどものデータ全部（全員ぶんを購読して受け渡しにも使う）
+       shared/tiles  … 通常・特別タイルの共通内容
+       profiles      … こども名簿（読み取りのみ・管理はかんりしゃ画面）
+    ・ローカルのブラウザ内保存は使わず、Firestore だけがデータの置き場所です
+    ・Firestore と画面の間は同じデータ形（JSON 文字列）を行き来させて、
+       上のクラシックスクリプトのロジックをそのまま動かします（キャッシュはメモリ内のみ）
+     ============================================================ */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getFirestore, doc, collection, getDoc, onSnapshot, updateDoc, setDoc, deleteField }
+    from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-<!-- ▼ Firebase 同期レイヤー（画面の見た目・仕様には触れません） -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
-import { getAuth, signInAnonymously, onAuthStateChanged }
-  from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
-import { getDatabase, ref, onValue, set, update }
-  from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js';
+  const META = window.__LQ_APP;
+  const CFG  = window.LQ_FIREBASE_CONFIG;
 
-const S   = window.LQSTORE;
-const cfg = window.LQ_FIREBASE_CONFIG;
+  if(META && CFG && CFG.projectId){
+    const ROOT = window.LQ_ROOT || 'lifequest';
+    const NS = (!ROOT || ROOT==='lifequest') ? '' : (String(ROOT).replace(/[^A-Za-z0-9_-]/g,'')+'_');
+    const PROFILES = NS+'profiles', KIDS = NS+'kids', SHARED = NS+'shared';
+    const APP_ID = META.APP_ID;
+    const DB_KEY = META.DB_KEY, SHARED_KEY = META.SHARED_KEY, REG_KEY = META.REG_KEY;
+    const DB_PREFIX = 'lifequest_db_v1_';
 
-if(!S){
-  console.warn('[LifeQuest] ストアが初期化されていません');
-}else if(!cfg){
-  console.warn('[LifeQuest] firebase-config.js がありません。この端末だけの保存で動作します。');
-}else{
-  const ROOT = window.LQ_ROOT || 'lifequest';
-  const app  = initializeApp(cfg);
-  const auth = getAuth(app);
-  const rdb  = getDatabase(app);
-  const K    = S.K;
+    let fdb = null, ready = false, readyCalled = false, warnedNoData = false, mySnapRaw = null;
+    function loadSnap(){ try{ return mySnapRaw ? (JSON.parse(mySnapRaw)||{}) : {}; }catch(e){ return {}; } }
 
-  /* localStorageキー ⇔ データベースのパス */
-  const pathOf = k =>
-      k === K.reg    ? 'profiles'
-    : k === K.shared ? 'shared'
-    : k.indexOf(K.prefix) === 0 ? 'kids/' + k.slice(K.prefix.length)
-    : null;
+    /* サーバー側の最新（Firestore のマップ形式）をキープして差分書き込みに使う */
+    const mirror = { kids:Object.create(null), shared:null };
 
-  const isObj  = v => v !== null && typeof v === 'object';
-  const clone  = v => JSON.parse(JSON.stringify(v));
-  /* RTDBは空配列を消したり、配列をオブジェクトで返すことがあるので直す */
-  const toArr  = v => Array.isArray(v) ? v.filter(x=>x!=null)
-    : (isObj(v) ? Object.keys(v).sort((a,b)=>(+a)-(+b)).map(k=>v[k]).filter(x=>x!=null) : []);
+    const isObj = v => v !== null && typeof v === 'object';
+    function cloudList(o){
+      if(!isObj(o)) return [];
+      return Object.keys(o).filter(k=>o[k] && isObj(o[k]))
+        .map(k=>Object.assign({}, o[k], {id:k}));
+    }
+    /* Firestore（マップ型）→ 画面用（配列型）へ変換 */
+    function dataToLocal(o){
+      const d = defaultDB();
+      const p = Object.assign({}, o.player||{});
+      d.player = { name:(p.name||APP_NAME), level:Math.max(1,num(p.level,1)),
+        exp:Math.max(0,num(p.exp,0)), expToNext:Math.max(1,num(p.expToNext,100)),
+        money:Math.max(0,num(p.money,0)) };
+      d.message = (typeof o.message==='string') ? o.message : '';
+      d.lastResetDate = o.lastResetDate || new Date().toDateString();
+      d.icons = Object.assign({}, DEFAULT_ICONS, o.icons||{});
+      d.iconSize = Object.assign({}, DEFAULT_ICON_SIZE, o.iconSize||{});
+      d.tiles = cloudList(o.tiles);
+      d.shopItems = cloudList(o.shopItems);
+      const gc = o.gacha||{};
+      d.gacha = { cost:num(gc.cost,300), pool:cloudList(gc.pool) };
+      d.inventory = cloudList(o.inventory);
+      d.useRequests = cloudList(o.useRequests);
+      d.useHistory = cloudList(o.useHistory);
+      d.notify = cloudList(o.notify);
+      d.logs = cloudList(o.logs);
+      d.sharedSnap = loadSnap();   /* 共有タイルの前回状態を保持して競合を防ぐ */
+      return d;
+    }
+    /* 画面用（配列型）→ Firestore（マップ型）へ変換 */
+    function localToCloud(d){
+      const o = {
+        player:d.player,
+        message:(typeof d.message==='string')?d.message:'',
+        lastResetDate:d.lastResetDate || new Date().toDateString(),
+        icons:d.icons||{}, iconSize:d.iconSize||{},
+        tiles:{}, shopItems:{}, gacha:{cost:num(d.gacha&&d.gacha.cost,300),pool:{}},
+        inventory:{}, useRequests:{}, useHistory:{}, notify:{}, logs:{}
+      };
+      (d.tiles||[]).forEach((t,i)=>{ o.tiles[t.id||('tl_'+i)]=
+        {kind:t.kind||'daily', label:String(t.label||'タイル'), icon:t.icon||'', cardImage:t.cardImage||'',
+         rewardExp:num(t.rewardExp,0), rewardMoney:num(t.rewardMoney,0),
+         completed:!!t.completed, pending:!!t.pending, archived:!!t.archived, ord:num(t.ord,(i+1)*10)}; });
+      (d.shopItems||[]).forEach((s,i)=>{ o.shopItems[s.id||('sh_'+i)]=
+        {name:s.name||'商品', price:num(s.price,0), desc:s.desc||'', icon:s.icon||'', ord:num(s.ord,(i+1)*10)}; });
+      ((d.gacha&&d.gacha.pool)||[]).forEach((g,i)=>{ o.gacha.pool[g.id||('g_'+i)]=
+        {name:g.name||'景品', rarity:g.rarity||'N', weight:Math.max(0,num(g.weight,1)),
+         icon:g.icon||'', ord:num(g.ord,(i+1)*10)}; });
+      (d.inventory||[]).forEach((x,i)=>{ o.inventory[x.id||('inv_'+x.refId+'_'+i)]=
+        {refId:x.refId||'x', icon:x.icon||'', name:x.name||'アイテム', qty:num(x.qty,1)}; });
+      (d.useRequests||[]).forEach(r=>{ o.useRequests[r.id||('use_'+Date.now())]=
+        {refId:r.refId||'x', icon:r.icon||'', name:r.name||'アイテム', at:num(r.at,Date.now())}; });
+      (d.useHistory||[]).forEach((h,i)=>{ o.useHistory[h.id||('h'+(num(h.usedAt,Date.now())).toString(36)+i)]=
+        {icon:h.icon||'', name:h.name||'アイテム', usedAt:num(h.usedAt,Date.now())}; });
+      (d.notify||[]).forEach((n,i)=>{ o.notify[n.id||('n'+(num(n.at,Date.now())).toString(36)+i)]=
+        {at:num(n.at,Date.now()), text:String(n.text||'')}; });
+      (d.logs||[]).slice(0,120).forEach((l,i)=>{ o.logs[l.id||('l'+(num(l.ts,Date.now())-i).toString(36))]=
+        {ts:num(l.ts,Date.now()), text:String(l.text||'')}; });
+      return o;
+    }
+    /* キー順を整えた比較用の正規形（中身が同じなら書き込まない＝競合予防） */
+    function canon(v){
+      if(Array.isArray(v)) return '['+v.map(canon).join(',')+']';
+      if(isObj(v)) return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}';
+      return JSON.stringify(v);
+    }
+    /* Firestore のフィールドパス（ドット区切り）で差分を展開。消えたものは deleteField() */
+    function diff(a, b, base, out){
+      const ka = isObj(a) ? Object.keys(a) : [];
+      const kb = isObj(b) ? Object.keys(b) : [];
+      new Set(ka.concat(kb)).forEach(k=>{
+        const p = base ? base + '.' + k : k;
+        const av = isObj(a) ? a[k] : undefined;
+        const bv = isObj(b) ? b[k] : undefined;
+        if(bv === undefined || bv === null){
+          if(av !== undefined && av !== null) out[p] = deleteField();
+          return;
+        }
+        if(isObj(av) && isObj(bv) && !Array.isArray(av) && !Array.isArray(bv)){
+          diff(av, bv, p, out); return;
+        }
+        if(canon(av) !== canon(bv)) out[p] = bv;
+      });
+    }
 
-  const KID_ARRAYS = ['tiles','shopItems','inventory','useRequests','useHistory','notify','logs'];
-  function normKid(o){
-    o = isObj(o) ? clone(o) : {};
-    KID_ARRAYS.forEach(k=>{ o[k] = toArr(o[k]); });
-    if(isObj(o.gacha)) o.gacha.pool = toArr(o.gacha.pool);
-    return o;
-  }
-  function normShared(o){
-    o = isObj(o) ? clone(o) : {};
-    o.order = toArr(o.order);
-    if(!isObj(o.tiles) || Array.isArray(o.tiles)) o.tiles = {};
-    return o;
-  }
-
-  /* サーバー側の中身の控え（差分書き込みに使う） */
-  const mirror = Object.create(null);
-  let ready = false;
-
-  /* 変わったところだけ path→value に展開（消えたものは null） */
-  function diff(a, b, base, out){
-    const ka = isObj(a) ? Object.keys(a) : [];
-    const kb = isObj(b) ? Object.keys(b) : [];
-    new Set(ka.concat(kb)).forEach(k=>{
-      const p  = base ? base + '/' + k : k;
-      const av = isObj(a) ? a[k] : undefined;
-      const bv = isObj(b) ? b[k] : undefined;
-      if(bv === undefined || bv === null){
-        if(av !== undefined && av !== null) out[p] = null;
-        return;
+    async function writeKid(kidId, raw){
+      if(!fdb) return;
+      let local = null;
+      try{ local = JSON.parse(raw); }catch(e){ return; }
+      if(!local || typeof local!=='object') return;
+      if(local.sharedSnap){ mySnapRaw = JSON.stringify(local.sharedSnap); }  /* メモリ内スナップで競合を防ぐ */
+      const ref = doc(fdb, KIDS, kidId);
+      if(kidId === APP_ID && mirror.kids[APP_ID] === undefined){
+        /* かんりしゃがまだデータを作っていない：既定値のままなら送らない */
+        const blank = !(local.tiles && local.tiles.length)
+          && !(local.inventory && local.inventory.length)
+          && !(local.shopItems && local.shopItems.length)
+          && !(local.useRequests && local.useRequests.length)
+          && !(local.useHistory && local.useHistory.length)
+          && !(local.notify && local.notify.length)
+          && !(local.logs && local.logs.length)
+          && !local.message
+          && num(local.player&&local.player.level,1) === 1
+          && num(local.player&&local.player.exp,0) === 0
+          && num(local.player&&local.player.money,0) === 0;
+        if(blank){
+          if(!warnedNoData){ warnedNoData = true; toast('かんりしゃ画面でデータができるのを待っています'); }
+          return;
+        }
       }
-      if(isObj(av) && isObj(bv) && Array.isArray(av) === Array.isArray(bv)){
-        diff(av, bv, p, out); return;
+      /* 最新のサーバー状態を基準にして差分を送る（上書きを防ぐ） */
+      let cur = mirror.kids[kidId];
+      if(cur === undefined){
+        try{ const gs = await getDoc(ref); cur = gs.exists() ? gs.data() : null; }
+        catch(e){ console.error(e); return; }
+        mirror.kids[kidId] = cur ? JSON.parse(JSON.stringify(cur)) : null;
       }
-      if(JSON.stringify(av) !== JSON.stringify(bv)) out[p] = bv;
+      const next = localToCloud(local);
+      if(cur === null){          /* サーバーにまだ無い：自分のデータだけ新規作成できる */
+        if(kidId !== APP_ID) return;
+        try{ await setDoc(ref, next, {merge:true}); mirror.kids[kidId] = next; return; }
+        catch(e){ console.error('Firestore 保存に失敗', e); return; }
+      }
+      const ups = {};
+      diff(cur, next, '', ups);
+      if(!Object.keys(ups).length) return;
+      try{
+        await updateDoc(ref, ups);
+        mirror.kids[kidId] = next;           /* 送った内容を控えに */
+      }catch(e){ console.error('Firestore 保存に失敗', e); }
+    }
+    function writeShared(raw){
+      if(!fdb) return;
+      let s = null;
+      try{ s = JSON.parse(raw); }catch(e){ return; }
+      if(!s || typeof s!=='object') return;
+      const data = { tiles:s.tiles||{}, order:s.order||[] };
+      if(canon(data) === canon(mirror.shared)) return;
+      setDoc(doc(fdb, SHARED, 'tiles'), data).catch(e=>console.error('shared 保存に失敗', e));
+    }
+
+    /* 画面の保存（set のたびに呼ばれる）を Firestore へ中継する */
+    LQSTORE.setWriter(q=>{
+      if(!ready) return;                     /* 最初の受信までは送らない */
+      Object.keys(q).forEach(k=>{
+        if(k === DB_KEY)                     writeKid(APP_ID, q[k]);
+        else if(k.indexOf(DB_PREFIX) === 0)  writeKid(k.slice(DB_PREFIX.length), q[k]);
+        else if(k === SHARED_KEY)            writeShared(q[k]);
+        /* REG_KEY（名簿）はかんりしゃ画面が管理するのでこども画面からは書き込まない */
+      });
     });
+
+    function refreshAll(){ if(window.__lqRefresh) window.__lqRefresh(true); }
+    function firstReady(){
+      if(readyCalled) return;
+      readyCalled = true;
+      ready = true;
+      refreshAll();
+    }
+    /* kids コレクション受信 → 全員ぶんを画面用のキーに展開 */
+    function applyKidSnap(snap){
+      const seen = {};
+      let changed = false;
+      snap.forEach(d=>{
+        const id = d.id;
+        seen[id] = 1;
+        const data = d.data() || null;
+        mirror.kids[id] = data ? JSON.parse(JSON.stringify(data)) : null;
+        const key = DB_PREFIX + id;
+        if(!data){ if(LQSTORE.applyRemote(key, null)) changed = true; return; }
+        if(LQSTORE.applyRemote(key, JSON.stringify(dataToLocal(data)))) changed = true;
+      });
+      Object.keys(mirror.kids).forEach(id=>{
+        if(seen[id]) return;
+        mirror.kids[id] = null;
+        if(LQSTORE.applyRemote(DB_PREFIX + id, null)) changed = true;
+      });
+      if(changed) refreshAll();
+      firstReady();
+    }
+    function applySharedSnap(snap){
+      const s = snap.exists() ? (snap.data()||{}) : {};
+      mirror.shared = { tiles:s.tiles||{}, order:s.order||[] };
+      if(LQSTORE.applyRemote(SHARED_KEY, JSON.stringify(mirror.shared))) refreshAll();
+      firstReady();
+    }
+    function applyProfilesSnap(snap){
+      const list = [];
+      snap.forEach(d=>{ const dd = d.data()||{}; list.push({ id:d.id, name:dd.name||d.id }); });
+      list.sort((a,b)=>String(a.name).localeCompare(String(b.name),'ja'));
+      if(LQSTORE.applyRemote(REG_KEY, JSON.stringify(list))) refreshAll();
+    }
+
+    async function startBridge(){
+      const app = initializeApp(CFG);
+      const auth = getAuth(app);
+      fdb = getFirestore(app);
+      onAuthStateChanged(auth, u=>{
+        if(!u) return;
+        onSnapshot(collection(fdb, KIDS),       applyKidSnap,     err=>console.error(err));
+        onSnapshot(doc(fdb, SHARED, 'tiles'),   applySharedSnap,  err=>console.error(err));
+        onSnapshot(collection(fdb, PROFILES),   applyProfilesSnap,err=>console.error(err));
+      });
+      try{ await signInAnonymously(auth); }catch(e){ console.error(e); }
+    }
+    startBridge();
   }
+  </script>
 
-  function push(key, json){
-    const p = pathOf(key);
-    if(!p || json == null) return;
-    let next;
-    try{ next = JSON.parse(json); }catch(e){ return; }
-    const prev = mirror[key];
-    const node = ref(rdb, ROOT + '/' + p);
-    try{
-      if(prev === undefined){
-        set(node, next);
-      }else{
-        const ups = {};
-        diff(prev, next, '', ups);
-        if(!Object.keys(ups).length) return;
-        update(node, ups);
-      }
-      mirror[key] = clone(next);
-    }catch(e){ console.error('[LifeQuest] 書き込み失敗', e); }
-  }
-
-  S.setWriter(q=>{
-    if(!ready) return;            /* 最初の受信までは送らない（初期値で上書きしないため） */
-    Object.keys(q).forEach(k=>push(k, q[k]));
-  });
-
-  function applySnap(val){
-    val = isObj(val) ? val : {};
-    let changed = false;
-    const put = (key, obj)=>{
-      mirror[key] = clone(obj);
-      if(S.applyRemote(key, JSON.stringify(obj))) changed = true;
-    };
-    if(val.profiles !== undefined) put(K.reg,    toArr(val.profiles));
-    if(val.shared   !== undefined) put(K.shared, normShared(val.shared));
-    const kids = isObj(val.kids) ? val.kids : {};
-    Object.keys(kids).forEach(id=> put(K.prefix + id, normKid(kids[id])));
-    return changed;
-  }
-
-  let started = false;
-  function startSync(){
-    onValue(ref(rdb, ROOT), snap=>{
-      const changed = applySnap(snap.val());
-      if(!ready){
-        ready = true;
-        /* サーバーにまだ無いデータ（初回など）だけ上げる */
-        S.keys().forEach(k=>{ if(mirror[k] === undefined) push(k, S.get(k)); });
-      }
-      if(changed && window.__lqRefresh) window.__lqRefresh(true);
-    }, err=>{
-      console.error('[LifeQuest] 読み込みエラー', err);
-      if(window.__lqToast) window.__lqToast('つうしんエラー：' + (err.code || ''));
-    });
-  }
-
-  onAuthStateChanged(auth, u=>{ if(u && !started){ started = true; startSync(); } });
-  signInAnonymously(auth).catch(e=>{
-    console.error('[LifeQuest] ログイン失敗', e);
-    if(window.__lqToast) window.__lqToast('つながりません：' + (e.code || ''));
-  });
-}
-</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>
