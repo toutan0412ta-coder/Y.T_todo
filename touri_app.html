@@ -699,10 +699,9 @@ span.nav-img{
                          画像だけは子ごとに別々に設定できる
                          進捗（申請中・達成済み）は子ごとに独立
    ▼ 保存先
-      Firebase  Cloud Firestore（即時同期）
-      + localStorage（オフライン用キャッシュ）
-      ※ この画面のロジックは localStorage 互換レイヤーに保ち、
-         ファイル末尾の Firestore ブリッジ（module スクリプト）が同期します
+      Firebase  Cloud Firestore のみ（即時同期）
+      ※ ブラウザ内の永続保存は使いません。
+         データはすべて Firestore に置かれ、端末を変えても同じ内容が表示されます
    ========================================================== */
 function detectAppId(){
   const file = decodeURIComponent((location.pathname.split('/').pop() || '').trim());
@@ -720,21 +719,15 @@ const DB_KEY     = DB_PREFIX + APP_ID;
 const SHARED_KEY = 'lifequest_shared_tiles_v1';   /* 通常・特別タイルの共通定義 */
 
 /* ==========================================================
-   ★ 保存そう（localStorage 互換のシム）
-     ・cache … いま画面が見ているデータ（文字列JSON）
-     ・set   … cache と localStorage をすぐ更新し、Firebase へは少し遅らせて送る
+   ★ 保存そう（メモリキャッシュ）
+     ・cache … いま画面が見ているデータ（文字列JSON。永続化は Firestore のみ）
+     ・set   … メモリをすぐ更新し、Firestore へは少し遅らせて送る
      ・下の module スクリプトが writer / applyRemote をつなぎます
    ========================================================== */
 const LQSTORE = (function(){
   const K = { reg:REG_KEY, shared:SHARED_KEY, prefix:DB_PREFIX };
   const cache = Object.create(null);
   const mine = k => k === K.reg || k === K.shared || k.indexOf(K.prefix) === 0;
-  try{
-    for(let i=0;i<localStorage.length;i++){
-      const k = localStorage.key(i);
-      if(k && mine(k)) cache[k] = localStorage.getItem(k);
-    }
-  }catch(e){}
 
   let writer = null, timer = null, queue = Object.create(null);
   function flush(){
@@ -747,25 +740,22 @@ const LQSTORE = (function(){
     get(k){ return (k in cache) ? cache[k] : null; },
     set(k, v){
       cache[k] = v;
-      try{ localStorage.setItem(k, v); }catch(e){}
       queue[k] = v;
       if(!timer) timer = setTimeout(flush, 200);
       return true;
     },
     keys(){ return Object.keys(cache); },
     setWriter(fn){ writer = fn; },
-    /* サーバー（または別タブ）からの反映。変化があれば true */
+    /* サーバー（Firestore）からの反映。変化があれば true */
     applyRemote(k, v){
       if(!mine(k)) return false;
       if(v === null || v === undefined){
         if(!(k in cache)) return false;
         delete cache[k];
-        try{ localStorage.removeItem(k); }catch(e){}
         return true;
       }
       if(cache[k] === v) return false;
       cache[k] = v;
-      try{ localStorage.setItem(k, v); }catch(e){}
       return true;
     }
   };
@@ -1713,9 +1703,9 @@ renderAll();
        kids/{ID}     … こどものデータ全部（全員ぶんを購読して受け渡しにも使う）
        shared/tiles  … 通常・特別タイルの共通内容
        profiles      … こども名簿（読み取りのみ・管理はかんりしゃ画面）
-    ・オフライン中は localStorage にキャッシュされ、つながると送られます
-    ・localStorage と同じ形（JSON 文字列）を Firestore と行き来させて、
-       上のクラシックスクリプトのロジックをそのまま動かします
+    ・ローカルのブラウザ内保存は使わず、Firestore だけがデータの置き場所です
+    ・Firestore と画面の間は同じデータ形（JSON 文字列）を行き来させて、
+       上のクラシックスクリプトのロジックをそのまま動かします（キャッシュはメモリ内のみ）
      ============================================================ */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged }
@@ -1733,10 +1723,8 @@ renderAll();
     const APP_ID = META.APP_ID;
     const DB_KEY = META.DB_KEY, SHARED_KEY = META.SHARED_KEY, REG_KEY = META.REG_KEY;
     const DB_PREFIX = 'lifequest_db_v1_';
-    const SNAP_KEY = 'lifequest_snap_v1_' + APP_ID;
 
     let fdb = null, ready = false, readyCalled = false, warnedNoData = false, mySnapRaw = null;
-    try{ mySnapRaw = localStorage.getItem(SNAP_KEY); }catch(e){}
     function loadSnap(){ try{ return mySnapRaw ? (JSON.parse(mySnapRaw)||{}) : {}; }catch(e){ return {}; } }
 
     /* サーバー側の最新（Firestore のマップ形式）をキープして差分書き込みに使う */
@@ -1748,7 +1736,7 @@ renderAll();
       return Object.keys(o).filter(k=>o[k] && isObj(o[k]))
         .map(k=>Object.assign({}, o[k], {id:k}));
     }
-    /* Firestore（マップ型）→ localStorage（配列型）へ変換 */
+    /* Firestore（マップ型）→ 画面用（配列型）へ変換 */
     function dataToLocal(o){
       const d = defaultDB();
       const p = Object.assign({}, o.player||{});
@@ -1771,7 +1759,7 @@ renderAll();
       d.sharedSnap = loadSnap();   /* 共有タイルの前回状態を保持して競合を防ぐ */
       return d;
     }
-    /* localStorage（配列型）→ Firestore（マップ型）へ変換 */
+    /* 画面用（配列型）→ Firestore（マップ型）へ変換 */
     function localToCloud(d){
       const o = {
         player:d.player,
@@ -1832,9 +1820,7 @@ renderAll();
       let local = null;
       try{ local = JSON.parse(raw); }catch(e){ return; }
       if(!local || typeof local!=='object') return;
-      if(local.sharedSnap){      /* 共有タイルの進捗ずれ防止スナップを記憶 */
-        try{ mySnapRaw = JSON.stringify(local.sharedSnap); localStorage.setItem(SNAP_KEY, mySnapRaw); }catch(e){}
-      }
+      if(local.sharedSnap){ mySnapRaw = JSON.stringify(local.sharedSnap); }  /* メモリ内スナップで競合を防ぐ */
       const ref = doc(fdb, KIDS, kidId);
       if(kidId === APP_ID && mirror.kids[APP_ID] === undefined){
         /* かんりしゃがまだデータを作っていない：既定値のままなら送らない */
@@ -1885,7 +1871,7 @@ renderAll();
       setDoc(doc(fdb, SHARED, 'tiles'), data).catch(e=>console.error('shared 保存に失敗', e));
     }
 
-    /* localStorage への書き込み（set のたびに呼ばれる）を Firestore へ中継する */
+    /* 画面の保存（set のたびに呼ばれる）を Firestore へ中継する */
     LQSTORE.setWriter(q=>{
       if(!ready) return;                     /* 最初の受信までは送らない */
       Object.keys(q).forEach(k=>{
@@ -1903,7 +1889,7 @@ renderAll();
       ready = true;
       refreshAll();
     }
-    /* kids コレクション受信 → 全員ぶんを localStorage 同等のキーに展開 */
+    /* kids コレクション受信 → 全員ぶんを画面用のキーに展開 */
     function applyKidSnap(snap){
       const seen = {};
       let changed = false;
