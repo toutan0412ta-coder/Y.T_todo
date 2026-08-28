@@ -8,7 +8,7 @@
 		})(window,document,'script','dataLayer');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>管理者画面｜せいかつクエスト</title>
+<title>かんりしゃ画面｜せいかつクエスト</title>
 <style>
 :root{
   --bg:#f4f6fa; --panel:#ffffff; --panel2:#f8f9fc; --line:#dde2ec; --line2:#c7cfdd;
@@ -873,6 +873,7 @@ function tileEditor(t){
     +'</select></div>'
     +'<div><label>けいけんち</label><input type="number" data-f="rewardExp" value="'+t.rewardExp+'"></div>'
     +'<div><label>おかね</label><input type="number" data-f="rewardMoney" value="'+t.rewardMoney+'"></div>'
+    +'<div><label>ならび順</label><input type="number" data-f="ord" value="'+num(t.ord,0)+'" min="0" step="10"><span class="hint">小さいほど上に表示</span></div>'
     +'</div>'
     +imgField({scope:'tiles',id:t.id,field:'cardImage',val:t.cardImage,label:'タイル全面の画像',ph:'tile_xxx.png'})
     +'<div class="btns">'
@@ -901,6 +902,7 @@ function viewTiles(){
     +KIND_ORDER.map(k=>'<option value="'+k+'">'+KIND_META[k].label+'（'+KIND_META[k].desc+'）</option>').join('')+'</select></div>'
     +'<div class="row"><label>けいけんち</label><input type="number" id="a_exp" value="10"></div>'
     +'<div class="row"><label>おかね</label><input type="number" id="a_money" value="10"></div>'
+    +'<div class="row"><label>ならび順</label><input type="number" id="a_ord" value="" placeholder="空なら末尾" style="width:150px"><span class="hint">小さいほど上</span></div>'
     +'<div class="row"><label>追加先</label><label style="min-width:0"><input type="checkbox" id="a_all" style="width:auto">'
     +' みんな（'+profiles.length+'人）に同じタイルを追加する</label></div>'
     +'<div class="row" style="align-items:flex-start"><div style="flex:1;min-width:240px">'
@@ -1101,7 +1103,7 @@ function collectBox(box,o){
   box.querySelectorAll('[data-f]').forEach(inp=>{
     const f=inp.dataset.f;
     let v=inp.value;
-    if(['rewardExp','rewardMoney','price','weight'].indexOf(f)>=0) v=num(v,0);
+    if(['rewardExp','rewardMoney','price','weight','ord'].indexOf(f)>=0) v=num(v,0);
     if(f==='cardImage') v=fixTile(v);
     if(f==='icon')      v=fixAsset(v);
     o[base+'/'+f]=v; any=true;
@@ -1352,12 +1354,15 @@ document.addEventListener('click', async e=>{
     const exp=num($('#a_exp').value,0), money=num($('#a_money').value,0);
     const card=fixTile(newImgValue('tileCard'));
     const all=$('#a_all') && $('#a_all').checked;
+    const ordInp=$('#a_ord');
+    const ordVal = (ordInp && String(ordInp.value).trim()!=='') ? num(ordInp.value,0) : null;
     const targets = all ? profiles.map(p=>p.id) : [currentId];
     const o={};
     targets.forEach(kid=>{
       const kd=kidLocal(kid), key='tl_'+uid();
       o[kidPath(kid,'tiles',key)]={kind:kind,label:label,icon:'',cardImage:card,
-        rewardExp:exp,rewardMoney:money,completed:false,pending:false,archived:false,ord:nextOrd(kd.tiles)};
+        rewardExp:exp,rewardMoney:money,completed:false,pending:false,archived:false,
+        ord:(ordVal===null ? nextOrd(kd.tiles) : ordVal)};
       addLog(o,kid,'タイル追加：'+label);
     });
     newImg.tileCard=''; delete previewURL['new_new_tileCard']; delete imgMetaCache['new_new_tileCard'];
