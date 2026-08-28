@@ -332,7 +332,7 @@ function fmtBytes(n){
 }
 
 /* ================= Firebase ================= */
-let fdb=null, uidAuth=null, cloud={}, connected=false;
+let fdb=null, uidAuth=null, cloud={}, connected=false, adminLastId=null;
 let profiles=[], currentId=null, db=null, tab='approve';
 let busy=false, dirty=false, seeded=false;
 const rolloverDone={};
@@ -1057,11 +1057,6 @@ function viewData(){
     +'<a class="linka" href="./'+esc(p.id)+'_app.html" target="_blank" rel="noopener">'+esc(p.id)+'_app.html をひらく</a>'
     +'<button class="btn sm" data-act="switchTo" data-uid="'+esc(p.id)+'">編集する</button>'
     +'<button class="btn ng sm" data-act="delChild" data-uid="'+esc(p.id)+'">削除</button></div>').join('');
-  const oldKeys=[];
-  for(let i=0;i<localStorage.length;i++){
-    const k=localStorage.key(i);
-    if(k && k.indexOf('lifequest_db_v1_')===0) oldKeys.push(k.slice('lifequest_db_v1_'.length));
-  }
   return '<div class="card"><h2>こどもの管理（'+profiles.length+'人）</h2>'+(rows||'<div class="empty">いません</div>')
     +'<div class="row" style="margin-top:13px"><button class="btn ok" data-act="addChild">＋こどもを追加</button>'
     +'<button class="btn ng" data-act="bulkDelChild">残す子を指定して一括削除</button></div>'
@@ -1080,10 +1075,7 @@ function viewData(){
     +'<div class="hint">Firestore：<code>'+esc(CFG.projectId||'-')+'</code><br>'
     +'コレクション：<code>'+esc(PROFILES)+'</code>／<code>'+esc(KIDS)+'</code>／ログインID（匿名）：<code>'+esc(uidAuth||'-')+'</code><br>'
     +'状態：'+(connected?'オンライン（即時反映）':'オフライン（つながると自動で送られます）')+'</div></div>'
-    +(oldKeys.length ? '<div class="card"><h2>この端末に残っている前のデータ</h2>'
-      +'<div class="hint">localStorage：'+oldKeys.map(k=>'<code>'+esc(k)+'</code>').join('、')+'</div>'
-      +'<div class="row" style="margin-top:11px"><button class="btn gold" data-act="migrate">クラウドへ移行する</button></div>'
-      +'<div class="hint">同じIDのクラウドデータは上書きされます。</div></div>' : '')
+
     +'<div class="card"><h2>バックアップ（'+esc(currentId)+'）</h2>'
     +'<div class="row"><button class="btn" data-act="exportOne">このデータを書き出す</button>'
     +'<button class="btn sub" data-act="exportAll">ぜんいん分を書き出す</button></div>'
@@ -1581,24 +1573,6 @@ document.addEventListener('click', async e=>{
     if(await push(o)) toast('初期化しました');
     return;
   }
-  if(act==='migrate'){
-    if(!confirm('この端末に残っている前のデータを、クラウドへ移行します。\n同じIDのクラウドデータは上書きされます。')) return;
-    const o={}; let n=0;
-    for(let i=0;i<localStorage.length;i++){
-      const k=localStorage.key(i);
-      if(!k || k.indexOf('lifequest_db_v1_')!==0) continue;
-      const kid=k.slice('lifequest_db_v1_'.length);
-      if(!ID_RE.test(kid)) continue;
-      let old=null; try{ old=JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ old=null; }
-      if(!old) continue;
-      o[kidPath(kid)]=toCloudKid(old);
-      o[P('profiles',kid)]={name:(old.player&&old.player.name)||defaultName(kid),ord:(n+1)*10};
-      n++;
-    }
-    if(!n){ toast('移行できるデータがありませんでした',true); return; }
-    if(await push(o)) toast(n+'人ぶんを移行しました');
-    return;
-  }
 });
 
 /* ================= タブ・セレクト ================= */
@@ -1693,9 +1667,8 @@ async function start(){
 function afterCloud(){
   loadProfiles();
   if(!profiles.length) seedBaseKidsOnce();
-  const saved=localStorage.getItem('lifequest_admin_last');
-  if(!currentId) currentId = profiles.some(p=>p.id===saved) ? saved : (profiles[0]?profiles[0].id:null);
-  if(currentId) localStorage.setItem('lifequest_admin_last',currentId);
+  if(!currentId) currentId = profiles.some(p=>p.id===adminLastId) ? adminLastId : (profiles[0]?profiles[0].id:null);
+  if(currentId) adminLastId=currentId;
   scheduleRender();
   autoRollover();
 }
