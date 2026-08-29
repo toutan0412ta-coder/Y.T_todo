@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head><script>(function(w,i,g){w[g]=w[g]||[];if(typeof w[g].push=='function')w[g].push(i)})
-(window,'GTM-K3QN3TWK','google_tags_first_party');</script><script>(function(w,d,s,l){w[l]=w[l]||[];(function(){w[l].push(arguments);})('set', 'developer_id.dY2E1Nz', true);
-		var f=d.getElementsByTagName(s)[0],
-		j=d.createElement(s);j.async=true;j.src='/gk7x/';
-		f.parentNode.insertBefore(j,f);
-		})(window,document,'script','dataLayer');</script>
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>かんりしゃ画面｜せいかつクエスト</title>
@@ -71,6 +66,8 @@ main{padding:16px; max-width:1080px; margin:0 auto}
 .row{display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-bottom:11px}
 .row label{font-size:13px; color:var(--sub); min-width:76px}
 .hint{font-size:12px; color:var(--sub); line-height:1.85; font-weight:normal}
+.owner{display:inline-block; font-size:11.5px; padding:3px 10px; border-radius:12px;
+  background:#e5eefb; color:#2a5d9e; border:1px solid #aecbee; font-weight:normal}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:12px}
 .grid.wide{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
 .grid.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
@@ -153,6 +150,7 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
 .childrow b{min-width:120px}
 .straylist{font-size:11.5px; color:var(--sub); line-height:2; max-height:160px; overflow:auto;
   background:#fafbfd; border:2px solid var(--line); border-radius:7px; padding:9px; word-break:break-all}
+.warncard{border-color:#f0cf8a; background:linear-gradient(180deg,#fffdf3,#fff)}
 .gate{max-width:360px; margin:60px auto; text-align:center}
 .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(18px);
   background:var(--green); color:#fff; padding:12px 22px; border-radius:8px; font-size:14px;
@@ -205,6 +203,13 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
    ・onSnapshot で購読しているので、承認するとこども画面に即反映されます
    ・画像は「パス参照」（image/tile/○○.png など）で保存します
 
+   ▼ 共有タイル（shared/tiles）は廃止しました
+   ・日々／通常／特別のすべてを kids/{ID}/tiles だけで管理します
+   ・shared コレクションへの書き込み・読み出し・同期は一切行いません
+   ・「みんなに追加」「ほかの子にもコピー」は、その時点で
+     それぞれの子に独立したタイルを作るだけです（以後は連動しません）
+   ・過去に作られてしまった shared の残りデータは、データタブから削除できます
+
    ▼ こどもが勝手に増えないための対策
    1) こども一覧は profiles だけを名簿とする（kids にあるだけの物は数えない）
    2) 保存パスに null / undefined / 空 が混ざったら書き込まない
@@ -215,7 +220,8 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, doc, collection, getDoc, getDocs, onSnapshot, writeBatch, runTransaction, deleteField }
+import { getFirestore, doc, collection, getDoc, getDocs, onSnapshot, setDoc, writeBatch,
+  runTransaction, deleteField }
   from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 /* ---- 設定（firebase-config.js が無いときはここに直接書いてもOK） ---- */
@@ -228,7 +234,9 @@ const ROOT = window.LQ_ROOT || 'lifequest';
 const PIN  = String(window.LQ_ADMIN_PIN || '');
 /* Firestore で使うコレクション名（LQ_ROOT を変えると家族ごとに分離できます） */
 const NS = (!ROOT || ROOT==='lifequest') ? '' : (String(ROOT).replace(/[^A-Za-z0-9_-]/g,'')+'_');
-const PROFILES = NS+'profiles', KIDS = NS+'kids', SHARED = NS+'shared', META = NS+'meta';
+const PROFILES = NS+'profiles', KIDS = NS+'kids', META = NS+'meta';
+/* ★ 廃止した共有タイル。掃除のためだけに名前を残しています（読み書き同期はしません） */
+const LEGACY_SHARED = NS+'shared';
 const fieldDelete = deleteField;
 
 const IMG='image/', A=IMG+'assets/', TILE_DIR=IMG+'tile/', LV_DIR=IMG+'lv/';
@@ -236,9 +244,9 @@ const NAME_MAP  = { yuika:'ゆいか', touri:'とうり' };
 const BASE_KIDS = ['yuika','touri'];
 
 const KIND_META = {
-  daily  :{label:'日々', desc:'毎日24時にリセット'},
-  normal :{label:'通常', desc:'達成すると翌日に消える'},
-  special:{label:'特別', desc:'キラキラ表示・達成で翌日に消える'}
+  daily  :{label:'日々', desc:'毎日24時にリセット／この子だけの設定'},
+  normal :{label:'通常', desc:'達成すると翌日に消える／この子だけの設定'},
+  special:{label:'特別', desc:'キラキラ表示・達成で翌日に消える／この子だけの設定'}
 };
 const KIND_ORDER = ['daily','normal','special'];
 
@@ -249,8 +257,9 @@ const DEFAULT_ICONS = {
 };
 const ICON_LABEL = {
   coin:'お金アイコン', star:'けいけんちアイコン', gacha:'ガチャの絵',
-  navHome:'フッター：メイン（全面・文字なし）', navStatus:'フッター：ステータス（全面・文字なし）',
-  navShop:'フッター：お店（全面・文字なし）',
+  navHome:'フッター：メイン（画像のみ・文字なし）',
+  navStatus:'フッター：ステータス（画像のみ・文字なし）',
+  navShop:'フッター：お店（画像のみ・文字なし）',
   character:'キャラ画像（レベル画像が無いとき）', bgRoom:'メイン画面の背景'
 };
 const DEFAULT_ICON_SIZE = {
@@ -258,7 +267,7 @@ const DEFAULT_ICON_SIZE = {
 };
 const SIZE_LABEL = {
   sm:'小アイコン', lg:'中アイコン', status:'ステータス', money:'ヘッダーのお金', reward:'タイルの報酬',
-  tile:'タイルの絵', inv:'もちもの', shop:'商品', use:'使用中リスト', nav:'フッターの高さ', gacha:'ガチャの絵'
+  tile:'タイルの絵', inv:'もちもの', shop:'商品', use:'使用中リスト', nav:'フッター画像の高さ', gacha:'ガチャの絵'
 };
 
 /* ================= 小道具 ================= */
@@ -340,6 +349,7 @@ const rolloverDone={};
 /* --- 増殖対策のための状態 --- */
 const ID_RE = /^[A-Za-z0-9_-]{1,32}$/;   // 正しいこどもID
 let strays = [];                          // profiles に無いのに db にだけあるデータ
+let legacyShared = [];                    // 廃止した shared コレクションの残り
 let seeding=false, rolling=false, addingChild=false, subscribed=false;
 
 function P(...parts){ return parts.join('/'); }
@@ -353,7 +363,8 @@ function pathOK(k){
 /* 保存パス → Firestore のドキュメントとフィールドに変換
    'db/yuika/tiles/t1/pending' → kids/yuika の 'tiles.t1.pending'
    'profiles/yuika/name'       → profiles/yuika の 'name'
-   'meta/seeded'               → meta/seeded の 'seededAt'            */
+   'meta/seeded'               → meta/seeded の 'seededAt'
+   ※ 'shared/...' は受け付けません（共有タイル廃止のため）           */
 function refOf(path){
   const seg=String(path||'').split('/').filter(Boolean);
   if(seg[0]==='db')       return {ref:doc(fdb,KIDS,seg[1]),     field:seg.slice(2).join('.')};
@@ -363,27 +374,53 @@ function refOf(path){
 }
 async function push(o){
   if(!fdb){ toast('接続していません',true); return false; }
-  if(!Object.keys(o).length) return true;
-  const bad=Object.keys(o).filter(k=>o[k]!==null && !pathOK(k));
+  const keys=Object.keys(o);
+  if(!keys.length) return true;
+  const bad=keys.filter(k=>o[k]!==null && !pathOK(k));
   if(bad.length){ toast('保存先が正しくありません：'+bad[0],true); return false; }
-  try{
+  const ops=[];
+  keys.forEach(k=>{
+    const r=refOf(k);
+    if(!r.ref) return;
+    ops.push({ref:r.ref, field:r.field, val:o[k]});
+  });
+  if(!ops.length) return true;
+  const runBatch=async()=>{
     const batch=writeBatch(fdb);
-    for(const [k,v] of Object.entries(o)){
-      const r=refOf(k);
-      if(!r.ref) continue;
-      if(v===null){
-        if(r.field) batch.update(r.ref, {[r.field]: fieldDelete()});   // フィールド削除
-        else        batch.delete(r.ref);                                // ドキュメント削除
-      }else if(r.field){
-        batch.update(r.ref, {[r.field]: v});      // ドット区切りで入れ子を更新（存在しなければ作成）
+    ops.forEach(op=>{
+      if(op.val===null){
+        if(op.field) batch.update(op.ref, {[op.field]: fieldDelete()});  // フィールド削除
+        else         batch.delete(op.ref);                               // ドキュメント削除
+      }else if(op.field){
+        batch.update(op.ref, {[op.field]: op.val});   // ドット区切りで入れ子を更新
       }else{
-        batch.set(r.ref, v);                       // ドキュメントを丸ごと置き換え
+        batch.set(op.ref, op.val);                    // ドキュメントを丸ごと置き換え
       }
-    }
+    });
     await batch.commit();
-    const si=$('#syncInfo'); if(si) si.textContent='保存 '+fmt(Date.now());
-    return true;
-  }catch(e){ toast('保存できません：'+(e.code||e.message),true); return false; }
+  };
+  try{
+    await runBatch();
+  }catch(e){
+    /* ドキュメント自体が無いときは、空のドキュメントを作ってからやり直す */
+    if(String(e.code||e.message||'').indexOf('not-found')>=0){
+      try{
+        const seen={};
+        for(const op of ops){
+          if(!op.field) continue;
+          const key=op.ref.path;
+          if(seen[key]) continue;
+          seen[key]=1;
+          await setDoc(op.ref, {}, {merge:true});
+        }
+        await runBatch();
+      }catch(e2){ toast('保存できません：'+(e2.code||e2.message),true); return false; }
+    }else{
+      toast('保存できません：'+(e.code||e.message),true); return false;
+    }
+  }
+  const si=$('#syncInfo'); if(si) si.textContent='保存 '+fmt(Date.now());
+  return true;
 }
 function addLog(o,kid,text){
   if(!text || !kid) return;
@@ -454,6 +491,7 @@ function kidLocal(kid){
     messageAt: num(s.messageAt,0),
     lastResetDate: s.lastResetDate || '',
     icons:{}, iconSize:{},
+    /* ★ タイルは kids/{ID}/tiles だけ。共有タイルは合成しません */
     tiles:listOf(s.tiles),
     shopItems:listOf(s.shopItems),
     gacha:{ cost:num(s.gacha&&s.gacha.cost,300), pool:listOf(s.gacha&&s.gacha.pool) },
@@ -589,6 +627,31 @@ async function seedBaseKidsOnce(){
   }finally{ seeding=false; }
 }
 
+/* ================= 廃止した共有タイルの掃除 ================= */
+async function checkLegacyShared(){
+  if(!fdb) return;
+  try{
+    const snap=await getDocs(collection(fdb, LEGACY_SHARED));
+    const ids=[]; snap.forEach(d=>ids.push(d.id));
+    legacyShared=ids;
+  }catch(e){ legacyShared=[]; }
+  scheduleRender();
+}
+async function deleteLegacyShared(){
+  if(!fdb){ toast('接続していません',true); return; }
+  try{
+    const snap=await getDocs(collection(fdb, LEGACY_SHARED));
+    if(snap.empty){ legacyShared=[]; toast('残りデータはありませんでした'); scheduleRender(); return; }
+    const batch=writeBatch(fdb);
+    snap.forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+    const n=snap.size;
+    legacyShared=[];
+    toast('共有タイルの残りデータ '+n+' 件を削除しました');
+    scheduleRender();
+  }catch(e){ toast('削除できません：'+(e.code||e.message),true); }
+}
+
 /* ================= 画面切りかえ ================= */
 function typing(){
   const a=document.activeElement;
@@ -650,6 +713,10 @@ function viewSetup(){
     +'  apiKey:"…", authDomain:"…firebaseapp.com",\n'
     +'  projectId:"…", appId:"…"\n};\n'
     +'window.LQ_ROOT = "lifequest";</pre></div>';
+}
+function ownerTag(){
+  const nm=(db&&db.player&&db.player.name)||currentId||'';
+  return '<span class="owner">'+esc(nm)+'（'+esc(currentId||'')+'）のデータ</span>';
 }
 
 /* ================= 画像の選択（パス参照で保存） ================= */
@@ -849,7 +916,7 @@ function tileHead(t){
 function viewApprove(){
   const pend=db.tiles.filter(t=>t.pending&&!t.completed&&!t.archived);
   const done=db.tiles.filter(t=>t.completed&&!t.archived);
-  return '<div class="card"><h2>承認まち（'+pend.length+'件）</h2><div class="grid">'
+  return '<div class="card"><h2>承認まち（'+pend.length+'件）'+ownerTag()+'</h2><div class="grid">'
     +(pend.length ? pend.map(t=>'<div class="item pend k-'+t.kind+'" data-scope="tiles" data-id="'+esc(t.id)+'">'+tileHead(t)
         +'<div class="btns"><button class="btn ok sm" data-act="approve">承認して報酬をあげる</button>'
         +'<button class="btn sub sm" data-act="reject">申請をとりけす</button></div></div>').join('')
@@ -860,7 +927,8 @@ function viewApprove(){
         +'<div class="btns"><button class="btn sub sm" data-act="undo">未達成に戻す（報酬も取消）</button></div></div>').join('')
       : '<div class="empty">まだありません</div>')
     +'</div><div class="hint" style="margin-top:11px">日々タイルは翌日0時にリセット、通常・特別タイルは達成すると翌日に消えます'
-    +'（タイル管理の「かくれているタイル」から復活できます）。</div></div>';
+    +'（タイル管理の「かくれているタイル」から復活できます）。'
+    +'表示・承認はすべて この子のデータだけを対象にしています。</div></div>';
 }
 
 /* ================= タイル管理 ================= */
@@ -882,19 +950,23 @@ function tileEditor(t){
         : (t.completed ? '<button class="btn sub sm" data-act="undo">未達成に戻す</button>'
                        : '<button class="btn ok sm" data-act="approve">達成にする</button>')
           +'<button class="btn sub sm" data-act="hideTile">かくす</button>')
-    +(profiles.length>1 ? '<button class="btn sub sm" data-act="copyTile">ほかの子にもコピー</button>':'')
+    +(profiles.length>1 ? '<button class="btn sub sm" data-act="copyTile">ほかの子に複製</button>':'')
     +'<button class="btn ng sm" data-act="delTile">削除</button></div></div>';
 }
 function viewTiles(){
   const sections = KIND_ORDER.map(k=>{
     const list=db.tiles.filter(t=>t.kind===k&&!t.archived);
     return '<div class="card"><h2><span class="kb kb-'+k+'">'+KIND_META[k].label+'</span> タイル（'+list.length+'）'
-      +'<span class="hint">'+KIND_META[k].desc+'</span></h2>'
+      +ownerTag()+'<span class="hint">'+KIND_META[k].desc+'</span></h2>'
       +'<div class="grid wide">'+(list.length?list.map(tileEditor).join(''):'<div class="empty">ありません</div>')+'</div></div>';
   }).join('');
   const arch=db.tiles.filter(t=>t.archived);
-  return sections
-    +'<div class="card"><h2>かくれているタイル（'+arch.length+'）</h2>'
+  return '<div class="card"><h2>タイルは子どもごとに独立しています</h2>'
+    +'<div class="hint">日々・通常・特別のすべてを <code>'+esc(KIDS)+'/'+esc(currentId)+'</code> に保存します。'
+    +'共有タイル（<code>shared/tiles</code>）は使いません。'
+    +'「みんなに追加」「ほかの子に複製」は、その時点でそれぞれの子に別々のタイルを作るだけで、以後は連動しません。</div></div>'
+    +sections
+    +'<div class="card"><h2>かくれているタイル（'+arch.length+'）'+ownerTag()+'</h2>'
     +'<div class="grid wide">'+(arch.length?arch.map(tileEditor).join(''):'<div class="empty">ありません</div>')+'</div></div>'
     +'<div class="card"><h2>タイルを追加</h2>'
     +'<div class="row"><label>なまえ</label><input id="a_label" placeholder="おてつだいの名前" style="flex:1;min-width:150px"></div>'
@@ -904,20 +976,21 @@ function viewTiles(){
     +'<div class="row"><label>おかね</label><input type="number" id="a_money" value="10"></div>'
     +'<div class="row"><label>ならび順</label><input type="number" id="a_ord" value="" placeholder="空なら末尾" style="width:150px"><span class="hint">小さいほど上</span></div>'
     +'<div class="row"><label>追加先</label><label style="min-width:0"><input type="checkbox" id="a_all" style="width:auto">'
-    +' みんな（'+profiles.length+'人）に同じタイルを追加する</label></div>'
+    +' みんな（'+profiles.length+'人）に、それぞれ別のタイルとして追加する</label></div>'
     +'<div class="row" style="align-items:flex-start"><div style="flex:1;min-width:240px">'
     +imgField({scope:'new',id:'new',field:'tileCard',val:newImg.tileCard,label:'タイル全面の画像',ph:'tile_xxx.png',attr:'data-skip'})
     +'</div></div>'
     +'<div class="row"><button class="btn ok" data-act="addTile">追加する</button>'
     +'<button class="btn gold" data-act="saveEdits">編集内容をまとめて保存</button>'
     +'<button class="btn sub sm" data-act="checkTileImgs">参照できない画像の設定を解除する</button></div>'
-    +'<div class="hint">画像を設定しなくても追加できます。そのときは、なまえの文字だけが表示されます。</div></div>';
+    +'<div class="hint">画像を設定しなくても追加できます。そのときは、なまえの文字だけが表示されます。'
+    +'チェックを付けて追加した場合も、あとから片方だけ編集・削除できます。</div></div>';
 }
 
 /* ================= つかいたい ================= */
 function viewUse(){
   const reqs=db.useRequests, inv=db.inventory, hist=db.useHistory.slice(0,30);
-  return '<div class="card"><h2>使用中（確認まち：'+reqs.length+'）</h2><div class="grid">'
+  return '<div class="card"><h2>使用中（確認まち：'+reqs.length+'）'+ownerTag()+'</h2><div class="grid">'
     +(reqs.length ? reqs.map(r=>'<div class="item pend" data-scope="useRequests" data-id="'+esc(r.id)+'">'
         +'<div class="head">'+iconHTML(r.icon)+'<span class="nm">'+esc(r.name)+'</span><span class="st pending">使用中</span></div>'
         +'<div class="meta"><span>申請 '+fmt(r.at)+'</span></div>'
@@ -944,7 +1017,7 @@ function viewUse(){
 /* ================= ステータス・メッセージ ================= */
 function viewStatus(){
   const p=db.player, msg=db.message||'';
-  return '<div class="card"><h2>こどもの画面に出すメッセージ</h2>'
+  return '<div class="card"><h2>こどもの画面に出すメッセージ'+ownerTag()+'</h2>'
     +'<textarea id="p_msg" class="msg" maxlength="500" placeholder="きょうもがんばってね！" '
     +'oninput="document.getElementById(\'msgCount\').textContent=this.value.length+\' / 500\'">'+esc(msg)+'</textarea>'
     +'<div class="row" style="margin-top:9px"><span class="hint" id="msgCount">'+msg.length+' / 500</span>'
@@ -975,7 +1048,7 @@ function viewStatus(){
 /* ================= おみせ・ガチャ ================= */
 function viewShop(){
   const total=db.gacha.pool.reduce((a,g)=>a+g.weight,0)||1;
-  return '<div class="card"><h2>商品（'+db.shopItems.length+'）</h2><div class="grid wide">'
+  return '<div class="card"><h2>商品（'+db.shopItems.length+'）'+ownerTag()+'</h2><div class="grid wide">'
     +(db.shopItems.length ? db.shopItems.map(s=>'<div class="item" data-scope="shopItems" data-id="'+esc(s.id)+'">'
         +'<div class="head">'+iconHTML(s.icon)+'<span class="nm">'+esc(s.name)+'</span><span class="st">おかね '+s.price+'</span></div>'
         +'<div class="fields">'
@@ -1023,7 +1096,11 @@ function viewShop(){
 
 /* ================= 見た目 ================= */
 function viewLook(){
-  const icons = Object.keys(DEFAULT_ICONS).map(k=>
+  const navKeys=['navHome','navStatus','navShop'];
+  const navIcons = navKeys.map(k=>
+    '<div class="item">'+imgField({scope:'icons',id:'icons',field:k,val:db.icons[k],label:ICON_LABEL[k]||k,ph:DEFAULT_ICONS[k]})+'</div>'
+  ).join('');
+  const icons = Object.keys(DEFAULT_ICONS).filter(k=>navKeys.indexOf(k)<0).map(k=>
     '<div class="item">'+imgField({scope:'icons',id:'icons',field:k,val:db.icons[k],label:ICON_LABEL[k]||k,ph:DEFAULT_ICONS[k]})+'</div>'
   ).join('');
   const sizes = Object.keys(DEFAULT_ICON_SIZE).map(k=>
@@ -1040,7 +1117,14 @@ function viewLook(){
       +'<div class="lvno">Lv.'+i+(i===lv?' ←いま':'')+'</div>'
       +'<code>'+esc(currentId+'_'+nn+'.png')+'</code></div>';
   }
-  return '<div class="card"><h2>アイコン・背景の画像</h2><div class="grid wide">'+icons+'</div>'
+  return '<div class="card"><h2>フッターの3つのメニュー画像'+ownerTag()+'</h2>'
+    +'<div class="grid wide">'+navIcons+'</div>'
+    +'<div class="row" style="margin-top:13px"><button class="btn gold" data-act="saveEdits">パスの変更を保存</button></div>'
+    +'<div class="hint">こども画面のフッターは、この3枚をボタン全面に表示します（文字は出ません、'
+    +'<code>object-fit:contain</code> で全体が入るように縮小されます）。'
+    +'画像が読み込めないときだけ、絵文字にフォールバックします。'
+    +'高さは下の「フッター画像の高さ」で調整できます。</div></div>'
+    +'<div class="card"><h2>そのほかのアイコン・背景</h2><div class="grid wide">'+icons+'</div>'
     +'<div class="row" style="margin-top:13px"><button class="btn gold" data-act="saveEdits">パスの変更を保存</button>'
     +'<button class="btn sub" data-act="resetIcons">既定のパスに戻す</button></div>'
     +'<div class="hint">「画像を選ぶ」で選んだファイル名がそのまま参照パスになります（画像そのものは GitHub に置きます）。'
@@ -1064,9 +1148,25 @@ function viewData(){
     +'<button class="btn ng" data-act="bulkDelChild">残す子を指定して一括削除</button></div>'
     +'<div class="hint">IDとファイル名が対応します：<code>yuika</code> → <code>yuika_app.html</code>。'
     +'レベル画像は <code>image/lv/yuika_01.png</code> のように置いてください。<br>'
-    +'この一覧に出るのは <code>/'+esc(ROOT)+'/profiles</code> に登録されている子だけです。</div></div>'
+    +'この一覧に出るのは <code>'+esc(PROFILES)+'</code> に登録されている子だけです。</div></div>'
+
+    +'<div class="card'+(legacyShared.length?' warncard':'')+'"><h2>共有タイル（廃止）</h2>'
+    +'<div class="hint">この管理画面は <code>'+esc(LEGACY_SHARED)+'</code> を読みませんし、書き込みもしません。'
+    +'タイルは日々・通常・特別のすべてが <code>'+esc(KIDS)+'/{ID}</code> の中だけで完結します。</div>'
+    +(legacyShared.length
+      ? '<div class="straylist" style="margin-top:9px">'
+        +legacyShared.slice(0,60).map(k=>'<code>'+esc(LEGACY_SHARED)+'/'+esc(k)+'</code>').join('、')
+        +(legacyShared.length>60?' ほか':'')+'</div>'
+        +'<div class="row" style="margin-top:11px">'
+        +'<button class="btn ng" data-act="delLegacyShared">残り '+legacyShared.length+' 件を削除する</button>'
+        +'<button class="btn sub sm" data-act="recheckShared">もう一度しらべる</button></div>'
+        +'<div class="hint">古い版のこども画面がまだ読みに行く可能性があるので、削除をおすすめします。</div>'
+      : '<div class="row" style="margin-top:9px"><span class="hint">残りデータはありません。</span>'
+        +'<button class="btn sub sm" data-act="recheckShared">もう一度しらべる</button></div>')
+    +'</div>'
+
     +(strays.length ? '<div class="card"><h2>登録されていないデータ（'+strays.length+'件）</h2>'
-      +'<div class="hint">こども一覧に無いのに <code>/'+esc(ROOT)+'/db</code> にだけ残っているデータです。'
+      +'<div class="hint">こども一覧に無いのに <code>'+esc(KIDS)+'</code> にだけ残っているデータです。'
       +'自動で作られてしまった分は、ここでまとめて消せます。</div>'
       +'<div class="straylist">'+strays.slice(0,200).map(k=>'<code>'+esc(k)+'</code>').join('、')
       +(strays.length>200?' ほか':'')+'</div>'
@@ -1116,6 +1216,13 @@ async function saveEdits(){
   document.querySelectorAll('.item[data-scope][data-id]').forEach(b=>collectBox(b,o));
   document.querySelectorAll('[data-f]').forEach(inp=>{
     if(inp.closest('.item[data-scope][data-id]')) return;
+    const f=inp.dataset.f;
+    if(Object.prototype.hasOwnProperty.call(DEFAULT_ICONS,f)) o[kidPath(currentId,'icons',f)]=fixAsset(inp.value);
+  });
+  /* 見た目タブでは .item の中にアイコン入力があるので拾い直す */
+  document.querySelectorAll('.item [data-f]').forEach(inp=>{
+    const box=inp.closest('.item[data-scope][data-id]');
+    if(box) return;
     const f=inp.dataset.f;
     if(Object.prototype.hasOwnProperty.call(DEFAULT_ICONS,f)) o[kidPath(currentId,'icons',f)]=fixAsset(inp.value);
   });
@@ -1177,6 +1284,14 @@ document.addEventListener('click', async e=>{
     delete imgMetaCache[key]; delete previewURL[key];
     applyImage(btn.dataset.scope,btn.dataset.id,btn.dataset.field,''); return; }
   if(act==='checkTileImgs'){ if(db) checkMissingTileImages(); return; }
+
+  /* --- 共有タイル（廃止）の掃除 --- */
+  if(act==='delLegacyShared'){
+    if(!confirm('廃止した共有タイル（'+LEGACY_SHARED+'）の残りデータを削除します。よろしいですか？\n'
+      +'各こどものタイルには影響しません。')) return;
+    deleteLegacyShared(); return;
+  }
+  if(act==='recheckShared'){ checkLegacyShared(); toast('しらべました'); return; }
 
   /* --- こども --- */
   if(act==='addChild'){ addChild(); return; }
@@ -1277,7 +1392,7 @@ document.addEventListener('click', async e=>{
     return;
   }
 
-  /* --- タイル --- */
+  /* --- タイル（すべて この子のデータだけを更新します） --- */
   if(act==='approve' && id){
     const t=db.tiles.find(x=>x.id===id); if(!t) return;
     const o={};
@@ -1326,7 +1441,7 @@ document.addEventListener('click', async e=>{
   }
   if(act==='delTile' && id){
     const t=db.tiles.find(x=>x.id===id); if(!t) return;
-    if(!confirm('「'+t.label+'」を削除しますか？')) return;
+    if(!confirm('「'+t.label+'」を削除しますか？\n（'+db.player.name+' のタイルだけを消します）')) return;
     const o={}; o[kidPath(currentId,'tiles',id)]=null;
     addLog(o,currentId,'タイル削除：'+t.label);
     if(await push(o)) toast('削除しました');
@@ -1336,7 +1451,8 @@ document.addEventListener('click', async e=>{
     const t=db.tiles.find(x=>x.id===id); if(!t) return;
     const others=profiles.filter(p=>p.id!==currentId);
     if(!others.length){ toast('ほかの子がいません',true); return; }
-    if(!confirm('「'+t.label+'」を ほかの'+others.length+'人にもコピーしますか？')) return;
+    if(!confirm('「'+t.label+'」を ほかの'+others.length+'人にも複製しますか？\n'
+      +'（それぞれ別のタイルになります。あとから連動はしません）')) return;
     const o={};
     others.forEach(p=>{
       const kd=kidLocal(p.id), key='tl_'+uid();
@@ -1344,7 +1460,7 @@ document.addEventListener('click', async e=>{
         rewardExp:t.rewardExp,rewardMoney:t.rewardMoney,completed:false,pending:false,archived:false,ord:nextOrd(kd.tiles)};
       addLog(o,p.id,'タイル追加：'+t.label);
     });
-    if(await push(o)) toast(others.length+'人にコピーしました');
+    if(await push(o)) toast(others.length+'人に複製しました');
     return;
   }
   if(act==='addTile'){
@@ -1366,7 +1482,7 @@ document.addEventListener('click', async e=>{
       addLog(o,kid,'タイル追加：'+label);
     });
     newImg.tileCard=''; delete previewURL['new_new_tileCard']; delete imgMetaCache['new_new_tileCard'];
-    if(await push(o)) toast(all?('みんなに追加しました'):'追加しました');
+    if(await push(o)) toast(all?('みんなに追加しました（それぞれ別のタイルです）'):'追加しました');
     return;
   }
   if(act==='saveEdits'){ saveEdits(); return; }
@@ -1659,6 +1775,9 @@ async function start(){
       snap.forEach(d=>{ cloud.db[d.id]=d.data()||{}; });
       afterCloud();
     }, err=>{ cloud.db={}; afterCloud(); });
+
+    /* ★ shared は購読しません。残骸の有無を一度だけ確認するだけです */
+    checkLegacyShared();
   });
 
   try{ await signInAnonymously(auth); }
@@ -1680,6 +1799,5 @@ function afterCloud(){
 setConn(false);
 start();
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>
