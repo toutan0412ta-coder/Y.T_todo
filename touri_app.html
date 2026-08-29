@@ -26,6 +26,8 @@
   --ic-reward:14px; --ic-tile:58px; --ic-inv:26px; --ic-shop:30px;
   --ic-use:22px; --ic-nav:26px; --ic-gacha:110px;
   --gap-status:20px;
+  --nav-fit:contain;   /* contain＝画像全体を表示 / cover＝枠いっぱい（端が切れます） */
+  --nav-pad:6px;       /* フッター画像のまわりの余白。cover にするときは 0 に */
   --bg-room:url('image/assets/bg_room.png');
   --bg-character:url('image/assets/scene_character.png');
 }
@@ -474,7 +476,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   box-shadow:inset 0 4px 0 rgba(255,255,255,.20), inset 0 -4px 0 rgba(0,0,0,.20), 0 5px 0 #5c5c5c;
 }
 
-/* ★ フッター：画像を全面表示・文字ラベルなし */
+/* ★ フッター：3つのメニューを画像で表示（文字ラベルなし） */
 .navbar{
   flex:0 0 auto;
   display:flex; width:100%;
@@ -484,22 +486,29 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 .nav-btn{
   flex:1 1 0; min-width:0; position:relative; overflow:hidden;
   height:calc(var(--ic-nav)*var(--ic-scale)*2.7);
+  display:flex; align-items:center; justify-content:center;
   cursor:pointer; background:#2b2015;
   border-right:2px solid #26190d;
 }
 .nav-btn:last-child{border-right:none;}
 .navbar .nav-img{
-  position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover; image-rendering:pixelated; display:block;
+  width:100%; height:100%;
+  padding:var(--nav-pad);
+  object-fit:var(--nav-fit); object-position:center;
+  image-rendering:pixelated; display:block;
+  pointer-events:none;                /* タップは .nav-btn が受け取る */
 }
-span.nav-img{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:calc(var(--ic-nav)*var(--ic-scale)*1.3); background:#2b2015;
+.navbar span.nav-img{                  /* 画像がないとき（絵文字） */
+  position:static; display:flex; align-items:center; justify-content:center;
+  width:100%; height:100%; padding:0; line-height:1; background:transparent;
+  font-size:calc(var(--ic-nav)*var(--ic-scale)*1.3);
 }
+.nav-btn.active{background:#3f2b1a;}
 .nav-btn.active::after{
   content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
   box-shadow:inset 0 0 0 3px var(--gold);
 }
+.nav-btn.active .nav-img{transform:scale(1.06);}
 .nav-btn:active{filter:brightness(1.15);}
 
 .toast{
@@ -561,7 +570,7 @@ span.nav-img{
 ::-webkit-scrollbar{width:6px;}
 ::-webkit-scrollbar-thumb{background:#5c4028; border-radius:3px;}
 @media (max-width:400px){
-  :root{--ic-scale:.86; --gap-status:16px;}
+  :root{--ic-scale:.86; --gap-status:16px; --nav-pad:5px;}
   body{padding:8px;}
   .app{height:calc(100dvh - 16px); border-radius:16px;}
   .screen{padding:10px;}
@@ -690,14 +699,15 @@ span.nav-img{
     </div>
   </div><!-- /.app-body -->
 
+  <!-- ▼ フッター：起動直後の仮表示。すぐ renderNav() が作り直します -->
   <div class="navbar">
-    <div class="nav-btn active" data-tab="main" role="button" aria-label="メイン" title="メイン">
+    <div class="nav-btn active" data-tab="main" role="button" tabindex="0" aria-label="メイン" title="メイン">
       <img class="nav-img" data-icon="navHome" data-fb="🏠" src="image/assets/icon_nav_home.png" alt="メイン">
     </div>
-    <div class="nav-btn" data-tab="status" role="button" aria-label="ステータス" title="ステータス">
+    <div class="nav-btn" data-tab="status" role="button" tabindex="0" aria-label="ステータス" title="ステータス">
       <img class="nav-img" data-icon="navStatus" data-fb="📊" src="image/assets/icon_nav_status.png" alt="ステータス">
     </div>
-    <div class="nav-btn" data-tab="shop" role="button" aria-label="お店" title="お店">
+    <div class="nav-btn" data-tab="shop" role="button" tabindex="0" aria-label="お店" title="お店">
       <img class="nav-img" data-icon="navShop" data-fb="🏪" src="image/assets/icon_nav_shop.png" alt="お店">
     </div>
   </div>
@@ -726,11 +736,11 @@ span.nav-img{
       yuika_app.html → yuika（ゆいか）
       touri_app.html → touri（とうり）
       2人分まったく同じ中身でOKです
-   ▼ タイルのあつかい
-      日々タイル      … 子ごとに独立（内容も進捗も別）
-      通常・特別タイル … 内容は共通（両方に同じものが出る）
-                         画像だけは子ごとに別々に設定できる
-                         進捗（申請中・達成済み）は子ごとに独立
+   ▼ タイルのあつかい（★ここが今回の変更点）
+      日々タイル・通常タイル・特別タイル
+        … すべて子ごとに独立（内容・画像・進捗ぜんぶ別）
+          かんりしゃ画面で、その子のぶんを個別に登録・編集します
+      日々タイルは毎日24時にリセット、通常・特別は達成すると翌日に消えます
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -749,7 +759,7 @@ const APP_NAME = NAME_MAP[APP_ID]
 const REG_KEY    = 'lifequest_profiles_v1';
 const DB_PREFIX  = 'lifequest_db_v1_';
 const DB_KEY     = DB_PREFIX + APP_ID;
-const SHARED_KEY = 'lifequest_shared_tiles_v1';   /* 通常・特別タイルの共通定義 */
+const SHARED_KEY = 'lifequest_shared_tiles_v1';   /* 旧・共通タイル置き場（現在は未使用） */
 
 /* ==========================================================
    ★ 保存そう（メモリキャッシュ）
@@ -824,8 +834,9 @@ const KIND_META = {
   special:{label:'特別', title:'★ 特別タイル',   note:'達成すると翌日に消えます'}
 };
 const KIND_ORDER   = ['daily','normal','special'];
-const SHARED_KINDS = ['normal','special'];
-const isSharedKind = k => SHARED_KINDS.indexOf(k) >= 0;
+/* ★ すべてのタイルを子ごとに独立させる（共通化しない） */
+const SHARED_KINDS = [];
+const isSharedKind = () => false;
 
 const $ = id => document.getElementById(id);
 const num = (v,d=0)=>{ const n = Number(v); return isNaN(n) ? d : n; };
@@ -963,125 +974,18 @@ function defaultDB(){
 }
 
 
-let lastRaw       = LQSTORE.get(DB_KEY);
-let lastSharedRaw = LQSTORE.get(SHARED_KEY);
+let lastRaw = LQSTORE.get(DB_KEY);
 
-/* ===== 共通タイル置き場 ===== */
-function loadShared(){
-  let s = null;
-  try{ s = JSON.parse(LQSTORE.get(SHARED_KEY) || 'null'); }catch(e){ s = null; }
-  if(!s || typeof s !== 'object') s = {};
-  if(!s.tiles || typeof s.tiles !== 'object') s.tiles = {};
-  if(!Array.isArray(s.order)) s.order = [];
-  return s;
-}
-function saveShared(s){
-  try{
-    const raw = JSON.stringify(s);
-    LQSTORE.set(SHARED_KEY, raw);
-    lastSharedRaw = raw;
-    return true;
-  }catch(e){ return false; }
-}
-function tileDef(t){
-  return {
-    kind: t.kind,
-    label: String(t.label==null?'':t.label),
-    rewardExp: num(t.rewardExp,0),
-    rewardMoney: num(t.rewardMoney,0),
-    icon: t.icon || '',
-    cardImage: t.cardImage || ''
-  };
-}
-
-/* 通常・特別タイルの「内容」を2人で共通化する（進捗はさわらない）
-   ・名前／けいけんち／おかね／しゅるい … 共通（片方で直すと両方に反映）
-   ・icon／cardImage                    … 子ごとに別々（それぞれ設定できる）
-   ・completed／pending／archived        … 子ごとに独立（同期しない）      */
+/* ==========================================================
+   ★ 以前は通常・特別タイルの内容を2人で共通化していました。
+      いまはすべて子ごとの独立データなので、共有置き場（shared/tiles）は使いません。
+      古いデータに残った sharedSnap は空にしておくだけです。
+   ========================================================== */
 function syncSharedTiles(d){
-  const sh = loadShared();
-  let dChanged = false, sChanged = false;
-  if(!d.sharedSnap || typeof d.sharedSnap !== 'object'){ d.sharedSnap = {}; dChanged = true; }
-  const snap = d.sharedSnap;
-
-  const mine = {};
-  d.tiles.forEach(t=>{ if(isSharedKind(t.kind)) mine[t.id] = t; });
-  const drop = {};
-
-  /* 1) 自分の変更を共有へ／共有の変更を自分へ */
-  Object.keys(mine).forEach(id=>{
-    const t = mine[id], cur = tileDef(t), old = snap[id];
-    let s = sh.tiles[id];
-
-    if(s && s.deleted){                       /* 別の画面で消された */
-      drop[id] = 1; delete snap[id]; dChanged = true; return;
-    }
-    if(!s){
-      if(old){ drop[id] = 1; delete snap[id]; dChanged = true; return; }
-      s = sh.tiles[id] = {
-        id:id, kind:cur.kind, label:cur.label,
-        rewardExp:cur.rewardExp, rewardMoney:cur.rewardMoney,
-        icon:cur.icon, cardImage:cur.cardImage, imgBy:{}, deleted:false
-      };
-      if(sh.order.indexOf(id) < 0) sh.order.push(id);
-      sChanged = true; snap[id] = cur; dChanged = true; return;
-    }
-    if(!s.imgBy || typeof s.imgBy !== 'object') s.imgBy = {};
-    const ov = s.imgBy[APP_ID] || (s.imgBy[APP_ID] = {});
-
-    ['kind','label','rewardExp','rewardMoney'].forEach(k=>{
-      if(old && cur[k] !== old[k]){
-        if(s[k] !== cur[k]){ s[k] = cur[k]; sChanged = true; }
-      }else{
-        let sv = s[k];
-        if(k === 'kind' && !isSharedKind(sv)) return;
-        if(t[k] !== sv){ t[k] = sv; dChanged = true; }
-      }
-    });
-    ['icon','cardImage'].forEach(k=>{
-      const shown = hasOwn(ov,k) ? (ov[k]||'') : (s[k]||'');
-      if(old && cur[k] !== old[k]){
-        if(ov[k] !== cur[k]){ ov[k] = cur[k]; sChanged = true; }
-      }else if((t[k]||'') !== shown){
-        t[k] = shown; dChanged = true;
-      }
-    });
-    snap[id] = tileDef(t);
-  });
-
-  /* 2) この画面で消されたものを共有にも反映 */
-  Object.keys(snap).forEach(id=>{
-    if(mine[id] || drop[id]) return;
-    if(sh.tiles[id] && !sh.tiles[id].deleted){ sh.tiles[id].deleted = true; sChanged = true; }
-    delete snap[id]; dChanged = true;
-  });
-
-  /* 3) 共有にあって自分に無いものを追加（進捗はまっさらから） */
-  sh.order.forEach(id=>{
-    const s = sh.tiles[id];
-    if(!s || s.deleted || mine[id] || drop[id]) return;
-    const ov = (s.imgBy && s.imgBy[APP_ID]) || {};
-    const t = {
-      id: id,
-      kind: isSharedKind(s.kind) ? s.kind : 'normal',
-      label: s.label || 'タイル',
-      rewardExp: num(s.rewardExp,0),
-      rewardMoney: num(s.rewardMoney,0),
-      icon: hasOwn(ov,'icon') ? (ov.icon||'') : (s.icon||''),
-      cardImage: hasOwn(ov,'cardImage') ? (ov.cardImage||'') : (s.cardImage||''),
-      completed:false, pending:false, archived:false
-    };
-    d.tiles.push(t);
-    snap[id] = tileDef(t);
-    dChanged = true;
-  });
-
-  if(Object.keys(drop).length){
-    d.tiles = d.tiles.filter(t=>!drop[t.id]);
-    dChanged = true;
+  if(!d.sharedSnap || typeof d.sharedSnap !== 'object' || Object.keys(d.sharedSnap).length){
+    d.sharedSnap = {};
   }
-  if(sChanged) saveShared(sh);
-  return dChanged;
+  return false;
 }
 
 function applyDayRollover(d){
@@ -1149,7 +1053,7 @@ function loadDB(){
     }
   });
 
-  /* ★ 通常・特別タイルの内容だけを2人で共通化 */
+  /* ★ タイルは子ごとに独立（共有処理は行いません） */
   if(syncSharedTiles(d)) dirty = true;
 
   d.shopItems.forEach(s=>{
@@ -1641,17 +1545,61 @@ document.addEventListener('keydown', e=>{
   if(e.key === 'Escape') $('imgModal').classList.remove('show');
 });
 
-document.querySelectorAll('.nav-btn').forEach(btn=>{
-  btn.onclick = ()=>{
-    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-    const sc = $('screen-'+btn.dataset.tab);
-    if(sc) sc.classList.remove('hidden');
-    $('app').classList.toggle('hide-topbar', btn.dataset.tab !== 'main');
-    $('appBody').scrollTop = 0;
-  };
-});
+/* ==========================================================
+   ★ フッター：3つのメニュー（画像／絵文字を自動で切り替え）
+      画像は db.icons.navHome / navStatus / navShop を使います。
+      画像が読めないときだけ絵文字になり、あとで直れば画像に戻ります。
+   ========================================================== */
+const NAV_ITEMS = [
+  {tab:'main',   iconKey:'navHome',   fb:'🏠', label:'メイン'},
+  {tab:'status', iconKey:'navStatus', fb:'📊', label:'ステータス'},
+  {tab:'shop',   iconKey:'navShop',   fb:'🏪', label:'お店'}
+];
+let curTab = 'main';
+function navSrc(key){
+  const v = fixAsset((db.icons && db.icons[key]) || '');
+  return (isImagePath(v) && !brokenSrc.has(v)) ? v : '';
+}
+function renderNav(){
+  const bar = document.querySelector('.navbar');
+  if(!bar) return;
+  const key = NAV_ITEMS.map(n=>n.tab+':'+(navSrc(n.iconKey)||n.fb)).join('|') + '|' + curTab;
+  if(bar.dataset.key === key) return;      /* 変化がなければ作り直さない */
+  bar.dataset.key = key;
+  bar.innerHTML = NAV_ITEMS.map(n=>{
+    const src = navSrc(n.iconKey);
+    const inner = src
+      ? `<img class="nav-img" data-icon="${n.iconKey}" data-fb="${n.fb}" src="${escapeHTML(src)}" alt="${escapeHTML(n.label)}">`
+      : `<span class="nav-img" data-icon="${n.iconKey}">${n.fb}</span>`;
+    return `<div class="nav-btn${n.tab===curTab?' active':''}" data-tab="${n.tab}"`
+      + ` role="button" tabindex="0" aria-label="${escapeHTML(n.label)}" title="${escapeHTML(n.label)}">${inner}</div>`;
+  }).join('');
+}
+function switchTab(tab){
+  if(!$('screen-'+tab)) return;
+  curTab = tab;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  $('screen-'+tab).classList.remove('hidden');
+  $('app').classList.toggle('hide-topbar', tab !== 'main');
+  $('appBody').scrollTop = 0;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const bar = document.querySelector('.navbar');
+  if(bar && bar.dataset.key) bar.dataset.key = bar.dataset.key.replace(/\|[^|]*$/, '|'+tab);
+}
+(function bindNav(){
+  const bar = document.querySelector('.navbar');
+  if(!bar) return;
+  bar.addEventListener('click', e=>{
+    const b = e.target.closest('.nav-btn');
+    if(b && b.dataset.tab) switchTab(b.dataset.tab);
+  });
+  bar.addEventListener('keydown', e=>{
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const b = e.target.closest('.nav-btn');
+    if(b && b.dataset.tab){ e.preventDefault(); switchTab(b.dataset.tab); }
+  });
+})();
+
 document.querySelectorAll('.shop-tab-btn').forEach(btn=>{
   btn.onclick = ()=>{
     document.querySelectorAll('.shop-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1693,19 +1641,18 @@ function renderAll(){
   resolveLevelImage();
   renderTop(); renderMsg(); renderTiles(); renderStatus(); renderShop();
   renderGallery();
+  renderNav();
   applyFreeze();
 }
 
 
 /* ===== 同期（かんりしゃ画面・もうひとりの操作をひろう） ===== */
 function refresh(force){
-  const raw  = LQSTORE.get(DB_KEY);
-  const sraw = LQSTORE.get(SHARED_KEY);
+  const raw = LQSTORE.get(DB_KEY);
   const dayChanged = db.lastResetDate !== new Date().toDateString();
-  if(!force && raw === lastRaw && sraw === lastSharedRaw && !dayChanged) return;
+  if(!force && raw === lastRaw && !dayChanged) return;
   db = loadDB();
-  lastRaw       = LQSTORE.get(DB_KEY);
-  lastSharedRaw = LQSTORE.get(SHARED_KEY);
+  lastRaw = LQSTORE.get(DB_KEY);
   registerProfile(db.player.name);
   document.title = 'せいかつクエスト｜' + myName();
   notifyChanges();
@@ -1737,8 +1684,8 @@ renderAll();
      Firebase  Cloud Firestore 同期ブリッジ（かんりしゃ画面と即時同期）
     ・この画面のデータは Firestore に保存・購読されます
        kids/{ID}     … こどものデータ全部（全員ぶんを購読して受け渡しにも使う）
-       shared/tiles  … 通常・特別タイルの共通内容
        profiles      … こども名簿（読み取りのみ・管理はかんりしゃ画面）
+    ・★ タイルは子ごとに独立させたので shared/tiles は購読も書き込みもしません
     ・ローカルのブラウザ内保存は使わず、Firestore だけがデータの置き場所です
     ・Firestore と画面の間は同じデータ形（JSON 文字列）を行き来させて、
        上のクラシックスクリプトのロジックをそのまま動かします（キャッシュはメモリ内のみ）
@@ -1755,16 +1702,15 @@ renderAll();
   if(META && CFG && CFG.projectId){
     const ROOT = window.LQ_ROOT || 'lifequest';
     const NS = (!ROOT || ROOT==='lifequest') ? '' : (String(ROOT).replace(/[^A-Za-z0-9_-]/g,'')+'_');
-    const PROFILES = NS+'profiles', KIDS = NS+'kids', SHARED = NS+'shared';
+    const PROFILES = NS+'profiles', KIDS = NS+'kids';
     const APP_ID = META.APP_ID;
-    const DB_KEY = META.DB_KEY, SHARED_KEY = META.SHARED_KEY, REG_KEY = META.REG_KEY;
+    const DB_KEY = META.DB_KEY, REG_KEY = META.REG_KEY;
     const DB_PREFIX = 'lifequest_db_v1_';
 
-    let fdb = null, ready = false, readyCalled = false, warnedNoData = false, mySnapRaw = null;
-    function loadSnap(){ try{ return mySnapRaw ? (JSON.parse(mySnapRaw)||{}) : {}; }catch(e){ return {}; } }
+    let fdb = null, ready = false, readyCalled = false, warnedNoData = false;
 
     /* サーバー側の最新（Firestore のマップ形式）をキープして差分書き込みに使う */
-    const mirror = { kids:Object.create(null), shared:null };
+    const mirror = { kids:Object.create(null) };
 
     const isObj = v => v !== null && typeof v === 'object';
     function cloudList(o){
@@ -1792,7 +1738,7 @@ renderAll();
       d.useHistory = cloudList(o.useHistory);
       d.notify = cloudList(o.notify);
       d.logs = cloudList(o.logs);
-      d.sharedSnap = loadSnap();   /* 共有タイルの前回状態を保持して競合を防ぐ */
+      d.sharedSnap = {};   /* 共通タイルは使わないので常に空 */
       return d;
     }
     /* 画面用（配列型）→ Firestore（マップ型）へ変換 */
@@ -1856,7 +1802,6 @@ renderAll();
       let local = null;
       try{ local = JSON.parse(raw); }catch(e){ return; }
       if(!local || typeof local!=='object') return;
-      if(local.sharedSnap){ mySnapRaw = JSON.stringify(local.sharedSnap); }  /* メモリ内スナップで競合を防ぐ */
       const ref = doc(fdb, KIDS, kidId);
       if(kidId === APP_ID && mirror.kids[APP_ID] === undefined){
         /* かんりしゃがまだデータを作っていない：既定値のままなら送らない */
@@ -1897,15 +1842,6 @@ renderAll();
         mirror.kids[kidId] = next;           /* 送った内容を控えに */
       }catch(e){ console.error('Firestore 保存に失敗', e); }
     }
-    function writeShared(raw){
-      if(!fdb) return;
-      let s = null;
-      try{ s = JSON.parse(raw); }catch(e){ return; }
-      if(!s || typeof s!=='object') return;
-      const data = { tiles:s.tiles||{}, order:s.order||[] };
-      if(canon(data) === canon(mirror.shared)) return;
-      setDoc(doc(fdb, SHARED, 'tiles'), data).catch(e=>console.error('shared 保存に失敗', e));
-    }
 
     /* 画面の保存（set のたびに呼ばれる）を Firestore へ中継する */
     LQSTORE.setWriter(q=>{
@@ -1913,7 +1849,7 @@ renderAll();
       Object.keys(q).forEach(k=>{
         if(k === DB_KEY)                     writeKid(APP_ID, q[k]);
         else if(k.indexOf(DB_PREFIX) === 0)  writeKid(k.slice(DB_PREFIX.length), q[k]);
-        else if(k === SHARED_KEY)            writeShared(q[k]);
+        /* shared/tiles は使わなくなりました（タイルは子ごとに独立） */
         /* REG_KEY（名簿）はかんりしゃ画面が管理するのでこども画面からは書き込まない */
       });
     });
@@ -1946,12 +1882,6 @@ renderAll();
       if(changed) refreshAll();
       firstReady();
     }
-    function applySharedSnap(snap){
-      const s = snap.exists() ? (snap.data()||{}) : {};
-      mirror.shared = { tiles:s.tiles||{}, order:s.order||[] };
-      if(LQSTORE.applyRemote(SHARED_KEY, JSON.stringify(mirror.shared))) refreshAll();
-      firstReady();
-    }
     function applyProfilesSnap(snap){
       const list = [];
       snap.forEach(d=>{ const dd = d.data()||{}; list.push({ id:d.id, name:dd.name||d.id }); });
@@ -1965,9 +1895,8 @@ renderAll();
       fdb = getFirestore(app);
       onAuthStateChanged(auth, u=>{
         if(!u) return;
-        onSnapshot(collection(fdb, KIDS),       applyKidSnap,     err=>console.error(err));
-        onSnapshot(doc(fdb, SHARED, 'tiles'),   applySharedSnap,  err=>console.error(err));
-        onSnapshot(collection(fdb, PROFILES),   applyProfilesSnap,err=>console.error(err));
+        onSnapshot(collection(fdb, KIDS),     applyKidSnap,      err=>console.error(err));
+        onSnapshot(collection(fdb, PROFILES), applyProfilesSnap, err=>console.error(err));
       });
       try{ await signInAnonymously(auth); }catch(e){ console.error(e); }
     }
