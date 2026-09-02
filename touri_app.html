@@ -27,7 +27,7 @@
   --ic-use:22px; --ic-nav:26px; --ic-gacha:110px;
   --gap-status:20px;
   --nav-fit:contain;   /* contain＝画像全体を表示 / cover＝枠いっぱい（端が切れます） */
-  --nav-pad:6px;       /* フッター画像のまわりの余白。cover にするときは 0 に */
+  --nav-pad:0px;       /* ★ フッター画像のまわりの余白：0＝余白なし */
   --bg-room:url('image/assets/bg_room.png');
   --bg-character:url('image/assets/scene_character.png');
 }
@@ -93,7 +93,10 @@ img.ri{width:var(--s); height:var(--s);}
 span.ri-e{font-size:var(--s);}
 .s-tile{--s:calc(var(--ic-tile)*var(--ic-scale));}
 .s-inv{--s:calc(var(--ic-inv)*var(--ic-scale));}
-.s-shop{--s:calc(var(--ic-shop)*var(--ic-scale));}
+/* ★ お店の商品アイコンを大きく（1.9倍） */
+.s-shop{--s:calc(var(--ic-shop)*var(--ic-scale)*1.9);}
+/* ★ ガチャのラインナップ用 */
+.s-lineup{--s:calc(var(--ic-shop)*var(--ic-scale)*1.6);}
 .s-use{--s:calc(var(--ic-use)*var(--ic-scale));}
 .s-modal{--s:64px;}
 .icon-fb{
@@ -105,7 +108,8 @@ span.ri-e{font-size:var(--s);}
 .status-card .icon-fb.lg{font-size:calc(var(--ic-status)*var(--ic-scale)*1.3);}
 
 .tile-reward .icon-fb{font-size:calc(var(--ic-reward)*var(--ic-scale));}
-.shop-item-icon .icon-fb{font-size:calc(var(--ic-shop)*var(--ic-scale));}
+/* ★ お店の商品アイコン（絵文字のとき）も大きく */
+.shop-item-icon .icon-fb{font-size:calc(var(--ic-shop)*var(--ic-scale)*1.9);}
 span.gacha-emoji{
   display:flex; align-items:center; justify-content:center;
   font-size:calc(var(--ic-gacha)*var(--ic-scale)*.82);
@@ -434,8 +438,9 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
   padding:8px 10px; margin-bottom:8px;
 }
+/* ★ お店の商品アイコンの枠を大きく（1.9倍） */
 .shop-item-icon{
-  width:calc(var(--ic-shop)*var(--ic-scale)); flex:none;
+  width:calc(var(--ic-shop)*var(--ic-scale)*1.9); flex:none;
   display:flex; align-items:center; justify-content:center;
 }
 .shop-item-info{flex:1; min-width:0;}
@@ -476,19 +481,46 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   box-shadow:inset 0 4px 0 rgba(255,255,255,.20), inset 0 -4px 0 rgba(0,0,0,.20), 0 5px 0 #5c5c5c;
 }
 
-/* ★ フッター：3つのメニューを画像で表示（文字ラベルなし） */
+/* ===== ★ ガチャ ラインナップ ===== */
+.lineup-wrap{
+  margin-top:12px; background:var(--purple-dark);
+  border:3px solid var(--wood-darker); border-radius:12px; padding:10px;
+}
+.lineup-title{color:var(--gold); text-align:center; font-size:14px; margin-bottom:8px;}
+.lineup-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px;}
+.lineup-cell{
+  background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
+  padding:7px 4px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center;
+}
+.lineup-cell.unknown{background:#d8cdb8; border-color:#6b5c46;}
+.lineup-icon{
+  display:flex; align-items:center; justify-content:center;
+  min-height:calc(var(--ic-shop)*var(--ic-scale)*1.6);
+}
+.lineup-cell.unknown .lineup-icon{opacity:.9;}
+.lineup-name{
+  font-size:11px; font-weight:bold; color:var(--wood-darker);
+  line-height:1.15; min-height:24px; word-break:break-all;
+}
+.lineup-cell.unknown .lineup-name{color:#6b5c46; letter-spacing:2px;}
+.lineup-rarity{font-size:10px; font-weight:bold; padding:1px 7px; border-radius:6px; background:rgba(0,0,0,.08);}
+.lineup-empty{grid-column:1/-1; text-align:center; color:var(--cream-dark); font-size:12px; padding:10px 0;}
+.lineup-note{color:#d6c6ee; font-size:10.5px; text-align:center; margin-top:8px;}
+
+/* ★ フッター：3つのメニューを画像で表示（余白はできるだけゼロ） */
 .navbar{
   flex:0 0 auto;
   display:flex; width:100%;
-  background:var(--wood-darker); border-top:3px solid #26190d;
+  margin:0; padding:0; line-height:0; font-size:0;
+  background:var(--wood-darker); border-top:2px solid #26190d;
   padding-bottom:env(safe-area-inset-bottom);
 }
 .nav-btn{
   flex:1 1 0; min-width:0; position:relative; overflow:hidden;
-  height:calc(var(--ic-nav)*var(--ic-scale)*2.7);
+  height:calc(var(--ic-nav)*var(--ic-scale)*2.2);
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; background:#2b2015;
-  border-right:2px solid #26190d;
+  border-right:1px solid #26190d;
 }
 .nav-btn:last-child{border-right:none;}
 .navbar .nav-img{
@@ -570,7 +602,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 ::-webkit-scrollbar{width:6px;}
 ::-webkit-scrollbar-thumb{background:#5c4028; border-radius:3px;}
 @media (max-width:400px){
-  :root{--ic-scale:.86; --gap-status:16px; --nav-pad:5px;}
+  :root{--ic-scale:.86; --gap-status:16px; --nav-pad:0px;}
   body{padding:8px;}
   .app{height:calc(100dvh - 16px); border-radius:16px;}
   .screen{padding:10px;}
@@ -695,6 +727,8 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
           <div class="gacha-cost">1回 <img class="icon-img lg" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"> <span id="gachaCostText">300</span></div>
           <button class="gacha-btn" id="gachaBtn">ガチャを回す</button>
         </div>
+        <!-- ★ ガチャのラインナップ（未取得は ? 表示） -->
+        <div class="lineup-wrap" id="gachaLineup"></div>
       </div>
     </div>
   </div><!-- /.app-body -->
@@ -736,11 +770,16 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       yuika_app.html → yuika（ゆいか）
       touri_app.html → touri（とうり）
       2人分まったく同じ中身でOKです
-   ▼ タイルのあつかい（★ここが今回の変更点）
+   ▼ タイルのあつかい
       日々タイル・通常タイル・特別タイル
         … すべて子ごとに独立（内容・画像・進捗ぜんぶ別）
           かんりしゃ画面で、その子のぶんを個別に登録・編集します
       日々タイルは毎日24時にリセット、通常・特別は達成すると翌日に消えます
+   ▼ ガチャのラインナップ（★今回の追加）
+      ガチャの下に景品一覧を表示します
+        ・1回でも当てた景品 … 本来のアイコンと名前
+        ・まだ当てていない景品 … 未取得用アイコン＋名前の文字数ぶんの「?」
+      当てた記録は gachaSeen に入り、Firestore に同期されます
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -814,14 +853,15 @@ const TILE_DIR = IMG + 'tile/';     /* タイル画像 */
 const LV_DIR   = IMG + 'lv/';       /* レベル別キャラ画像 yuika_01.png ... */
 
 const DEFAULT_ICONS = {
-  coin      : A + 'coin.gif',
-  star      : A + 'star.gif',
-  gacha     : A + 'scene_gachamachine.png',
-  navHome   : A + 'icon_nav_home.png',
-  navStatus : A + 'icon_nav_status.png',
-  navShop   : A + 'icon_nav_shop.png',
-  character : A + 'scene_character.png',
-  bgRoom    : A + 'bg_room.png'
+  coin         : A + 'coin.gif',
+  star         : A + 'star.gif',
+  gacha        : A + 'scene_gachamachine.png',
+  gachaUnknown : A + 'icon_unknown.png',   /* ★ まだ取得していない景品用のアイコン */
+  navHome      : A + 'icon_nav_home.png',
+  navStatus    : A + 'icon_nav_status.png',
+  navShop      : A + 'icon_nav_shop.png',
+  character    : A + 'scene_character.png',
+  bgRoom       : A + 'bg_room.png'
 };
 const DEFAULT_ICON_SIZE = {
   sm:16, lg:22, status:28, money:34, reward:14,
@@ -965,6 +1005,7 @@ function defaultDB(){
     sharedSnap:{},
     shopItems:[],
     gacha:{ cost:300, pool:[] },
+    gachaSeen:[],          /* ★ 一度でも当てたガチャ景品のID */
     inventory:[],
     useRequests:[],
     useHistory:[],
@@ -1016,6 +1057,18 @@ function loadDB(){
   if(!Array.isArray(d.useHistory)){ d.useHistory = []; dirty = true; }
   if(!Array.isArray(d.notify)){ d.notify = []; dirty = true; }
   if(!Array.isArray(d.logs)){ d.logs = []; dirty = true; }
+  /* ★ ガチャの入手記録 */
+  if(!Array.isArray(d.gachaSeen)){ d.gachaSeen = []; dirty = true; }
+  {
+    const before = d.gachaSeen.length;
+    const uniq = [];
+    d.gachaSeen.forEach(v=>{
+      const s = String(v==null?'':v);
+      if(s && uniq.indexOf(s) < 0) uniq.push(s);
+    });
+    d.gachaSeen = uniq;
+    if(d.gachaSeen.length !== before) dirty = true;
+  }
 
   /* メッセージ（旧 msg キーも取り込む） */
   if(typeof d.message !== 'string'){
@@ -1062,6 +1115,24 @@ function loadDB(){
   d.gacha.pool.forEach(g=>{
     if(isImagePath(g.icon)){ const v = fixAsset(g.icon); if(v!==g.icon){ g.icon = v; dirty = true; } }
   });
+
+  /* ★ もちもの・使用中・使用りれきから「入手ずみ」を引きつぐ（むかしのデータ用） */
+  (function seedGachaSeen(){
+    const before = d.gachaSeen.length;
+    const add = id=>{
+      const s = String(id||'');
+      if(s && d.gachaSeen.indexOf(s) < 0) d.gachaSeen.push(s);
+    };
+    const byName = {};
+    d.gacha.pool.forEach(g=>{ if(g && g.name) byName[String(g.name)] = g.id; });
+    d.inventory.forEach(i=>{
+      const r = String((i && i.refId) || '');
+      if(r.indexOf('gacha_') === 0) add(r.slice(6));
+      else if(i && byName[i.name]) add(byName[i.name]);
+    });
+    d.useRequests.concat(d.useHistory).forEach(x=>{ if(x && byName[x.name]) add(byName[x.name]); });
+    if(d.gachaSeen.length !== before) dirty = true;
+  })();
 
   if(!d.player || typeof d.player !== 'object'){ d.player = defaultDB().player; dirty = true; }
   if(typeof d.player.name !== 'string' || !d.player.name.trim()){ d.player.name = APP_NAME; dirty = true; }
@@ -1513,6 +1584,7 @@ function renderShop(){
   setText('gachaCostText', num(db.gacha.cost).toLocaleString());
   const gb = $('gachaBtn');
   if(gb) gb.disabled = (db.player.money < db.gacha.cost) || db.gacha.pool.length===0;
+  renderGachaLineup();
 }
 
 function pullGacha(){
@@ -1527,6 +1599,9 @@ function pullGacha(){
   const existing = db.inventory.find(i=>i.refId==='gacha_'+picked.id);
   if(existing){ existing.qty += 1; }
   else{ db.inventory.push({id:'inv_g_'+picked.id+'_'+Date.now(), refId:'gacha_'+picked.id, icon:picked.icon, name:picked.name, qty:1}); }
+  /* ★ 入手記録（ラインナップの ? をひらく） */
+  if(!Array.isArray(db.gachaSeen)) db.gachaSeen = [];
+  if(db.gachaSeen.indexOf(String(picked.id)) < 0) db.gachaSeen.push(String(picked.id));
   saveDB(db); showGachaResult(picked); renderAll();
 }
 
@@ -1538,6 +1613,42 @@ function showGachaResult(item){
   setText('modalName', item.name);
   const m = $('gachaModal'); if(m) m.classList.add('show');
 }
+
+/* ==========================================================
+   ★ ガチャのラインナップ
+     ・1回でも当てた景品 … 本来のアイコンと名前
+     ・まだ当てていない景品 … 未取得用アイコン＋名前の文字数ぶんの「?」
+   ========================================================== */
+function maskName(name){
+  const n = String(name || '').replace(/\s+/g,'');
+  return '?'.repeat(Math.max(1, [...n].length));
+}
+function isGachaSeen(id){
+  return Array.isArray(db.gachaSeen) && db.gachaSeen.indexOf(String(id)) >= 0;
+}
+function renderGachaLineup(){
+  const wrap = $('gachaLineup');
+  if(!wrap) return;
+  const pool = (db.gacha.pool || []).slice()
+    .sort((a,b)=> (num(a.ord,0)-num(b.ord,0)) || String(a.id).localeCompare(String(b.id)));
+  const unknownIcon = db.icons.gachaUnknown || '❔';
+  const cells = pool.map(g=>{
+    const seen = isGachaSeen(g.id);
+    const icon = seen ? g.icon : unknownIcon;
+    const name = seen ? escapeHTML(g.name) : maskName(g.name);
+    const col  = rarityColor[g.rarity] || '#7a7a7a';
+    return `<div class="lineup-cell${seen ? '' : ' unknown'}" title="${seen ? escapeHTML(g.name) : 'まだ出ていない景品'}">
+        <div class="lineup-icon">${renderIcon(icon,'s-lineup', seen ? '🎁' : '❔')}</div>
+        <div class="lineup-name">${name}</div>
+        <div class="lineup-rarity" style="color:${col}">${escapeHTML(g.rarity || 'N')}</div>
+      </div>`;
+  }).join('');
+  const got = pool.filter(g=>isGachaSeen(g.id)).length;
+  wrap.innerHTML = '<div class="lineup-title">★ ラインナップ ★</div>'
+    + `<div class="lineup-grid">${cells || '<div class="lineup-empty">景品がありません</div>'}</div>`
+    + (pool.length ? `<div class="lineup-note">あつめた ${got} / ${pool.length}　（❔＝まだ出ていない景品）</div>` : '');
+}
+
 $('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
 $('gachaBtn').onclick = pullGacha;
 $('imgModal').onclick = ()=>$('imgModal').classList.remove('show');
@@ -1686,6 +1797,7 @@ renderAll();
        kids/{ID}     … こどものデータ全部（全員ぶんを購読して受け渡しにも使う）
        profiles      … こども名簿（読み取りのみ・管理はかんりしゃ画面）
     ・★ タイルは子ごとに独立させたので shared/tiles は購読も書き込みもしません
+    ・★ ガチャの入手記録（gachaSeen）も同期します
     ・ローカルのブラウザ内保存は使わず、Firestore だけがデータの置き場所です
     ・Firestore と画面の間は同じデータ形（JSON 文字列）を行き来させて、
        上のクラシックスクリプトのロジックをそのまま動かします（キャッシュはメモリ内のみ）
@@ -1733,6 +1845,8 @@ renderAll();
       d.shopItems = cloudList(o.shopItems);
       const gc = o.gacha||{};
       d.gacha = { cost:num(gc.cost,300), pool:cloudList(gc.pool) };
+      /* ★ ガチャの入手記録（マップ → 配列） */
+      d.gachaSeen = Object.keys(o.gachaSeen || {}).filter(k=>o.gachaSeen[k]);
       d.inventory = cloudList(o.inventory);
       d.useRequests = cloudList(o.useRequests);
       d.useHistory = cloudList(o.useHistory);
@@ -1748,7 +1862,7 @@ renderAll();
         message:(typeof d.message==='string')?d.message:'',
         lastResetDate:d.lastResetDate || new Date().toDateString(),
         icons:d.icons||{}, iconSize:d.iconSize||{},
-        tiles:{}, shopItems:{}, gacha:{cost:num(d.gacha&&d.gacha.cost,300),pool:{}},
+        tiles:{}, shopItems:{}, gacha:{cost:num(d.gacha&&d.gacha.cost,300),pool:{}}, gachaSeen:{},
         inventory:{}, useRequests:{}, useHistory:{}, notify:{}, logs:{}
       };
       (d.tiles||[]).forEach((t,i)=>{ o.tiles[t.id||('tl_'+i)]=
@@ -1760,6 +1874,8 @@ renderAll();
       ((d.gacha&&d.gacha.pool)||[]).forEach((g,i)=>{ o.gacha.pool[g.id||('g_'+i)]=
         {name:g.name||'景品', rarity:g.rarity||'N', weight:Math.max(0,num(g.weight,1)),
          icon:g.icon||'', ord:num(g.ord,(i+1)*10)}; });
+      /* ★ ガチャの入手記録（配列 → マップ） */
+      (d.gachaSeen||[]).forEach(id=>{ if(id) o.gachaSeen[String(id)] = true; });
       (d.inventory||[]).forEach((x,i)=>{ o.inventory[x.id||('inv_'+x.refId+'_'+i)]=
         {refId:x.refId||'x', icon:x.icon||'', name:x.name||'アイテム', qty:num(x.qty,1)}; });
       (d.useRequests||[]).forEach(r=>{ o.useRequests[r.id||('use_'+Date.now())]=
@@ -1903,7 +2019,5 @@ renderAll();
     startBridge();
   }
   </script>
-
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>
