@@ -34,6 +34,19 @@ a{color:var(--blue-d)}
 .dot.on i{background:var(--green)}
 .dot.off{background:#ffe9ec; border-color:#f3b8c0; color:#a92b3a}
 .dot.off i{background:var(--red)}
+
+/* ★ ヘッダーの「承認まち」お知らせ */
+.alert{display:inline-flex; align-items:center; gap:8px; font-family:inherit; font-size:12.5px; cursor:pointer;
+  padding:6px 13px; border-radius:15px; border:2px solid var(--line2); background:#eef1f7; color:var(--sub)}
+.alert b{font-size:16px; line-height:1}
+.alert .who{font-size:11.5px; opacity:.95; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.alert.has{background:#ffe9ec; border-color:var(--red); color:var(--red-d); font-weight:bold;
+  animation:pulse 1.5s ease-out infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(224,75,92,.55)}
+  70%{box-shadow:0 0 0 9px rgba(224,75,92,0)}
+  100%{box-shadow:0 0 0 0 rgba(224,75,92,0)}
+}
 select,input,textarea{font-family:inherit; font-size:14px; color:var(--txt); background:#fff;
   border:2px solid var(--line2); border-radius:6px; padding:7px 9px; max-width:100%}
 select:focus,input:focus,textarea:focus{outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(61,130,216,.15)}
@@ -85,6 +98,7 @@ main{padding:16px; max-width:1080px; margin:0 auto}
 .st.pending{background:#fff3d9; color:#a06a06; border-color:#f0cf8a}
 .st.done{background:#e3f5e8; color:#1d7a40; border-color:#a8dcbb}
 .st.arch{background:#f0ece7; color:#8a6a4a; border-color:#d9cbb9}
+.st.carry{background:#ffe9ec; color:#a92b3a; border-color:#f3b8c0}
 .ic{width:28px; height:28px; vertical-align:middle; border-radius:4px; object-fit:contain; flex:none}
 .item{background:#fff; border:2px solid var(--line); border-radius:9px; padding:12px;
   display:flex; flex-direction:column; gap:9px; box-shadow:var(--shadow)}
@@ -92,6 +106,7 @@ main{padding:16px; max-width:1080px; margin:0 auto}
 .item.k-normal{border-left:7px solid var(--blue)}
 .item.k-special{border-left:7px solid var(--gold); border-color:#f0d79a; background:linear-gradient(180deg,#fffdf5,#fff)}
 .item.pend{border-color:var(--gold); box-shadow:0 0 0 3px rgba(240,169,44,.18), var(--shadow)}
+.item.carry{border-color:var(--red); box-shadow:0 0 0 3px rgba(224,75,92,.14), var(--shadow)}
 .item.arch{opacity:.75}
 .item .head{display:flex; gap:9px; align-items:center; flex-wrap:wrap}
 .item .nm{font-size:15px; font-weight:bold; flex:1; min-width:120px; word-break:break-word}
@@ -101,7 +116,7 @@ main{padding:16px; max-width:1080px; margin:0 auto}
 .item .fields label{display:block; font-size:11px; color:var(--sub); margin-bottom:3px}
 .item .fields input,.item .fields select{width:100%}
 
-/* ★ アコーディオン（タイル管理） */
+/* ★ アコーディオン（タイル・商品・ガチャ景品 共通） */
 .item.acc{padding:0; gap:0; overflow:hidden}
 .acc-head{display:flex; align-items:center; gap:9px; padding:11px 12px; cursor:pointer; flex-wrap:wrap;
   user-select:none; background:#fff; border-radius:7px}
@@ -109,7 +124,7 @@ main{padding:16px; max-width:1080px; margin:0 auto}
 .item.acc.open .acc-head{border-bottom:2px solid var(--line); background:#f6f8fc}
 .acc-head .nm{font-size:15px; font-weight:bold; flex:1; min-width:110px; word-break:break-word}
 .acc-mark{font-size:11px; color:var(--sub); width:15px; flex:none; text-align:center}
-.accmeta{font-size:11.5px; color:var(--sub); white-space:nowrap}
+.accmeta{font-size:11.5px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px}
 .acc-body{display:none; padding:12px; flex-direction:column; gap:9px}
 .item.acc.open .acc-body{display:flex}
 
@@ -167,6 +182,7 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
 .straylist{font-size:11.5px; color:var(--sub); line-height:2; max-height:160px; overflow:auto;
   background:#fafbfd; border:2px solid var(--line); border-radius:7px; padding:9px; word-break:break-all}
 .warncard{border-color:#f0cf8a; background:linear-gradient(180deg,#fffdf3,#fff)}
+.alertcard{border-color:var(--red); background:linear-gradient(180deg,#fff5f6,#fff)}
 .gate{max-width:360px; margin:60px auto; text-align:center}
 .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(18px);
   background:var(--green); color:#fff; padding:12px 22px; border-radius:8px; font-size:14px;
@@ -182,6 +198,7 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
   .row label{min-width:100%}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .accmeta{display:none}
+  .alert .who{max-width:120px}
 }
 </style>
 </head>
@@ -190,6 +207,10 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
 <header class="topbar">
   <div class="brand">かんりしゃ画面</div>
   <div class="topright">
+    <button class="alert" id="alertBtn" type="button" title="承認まち">
+      承認まち <b id="alertCnt">0</b> 件
+      <span class="who" id="alertWho">なし</span>
+    </button>
     <span class="dot" id="connDot"><i></i><span id="connTxt">接続中…</span></span>
     <label for="userSel">こども</label>
     <select id="userSel"></select>
@@ -218,21 +239,28 @@ textarea.msg{min-height:120px; font-size:14px; line-height:1.7}
    せいかつクエスト かんりしゃ画面（Firebase  Cloud Firestore 版）
 
    ▼ 今回の変更点
-   1) 日々タイルの編集が翌日以降も残ります
-      ・こども画面は「進捗（達成／申請中／かくれている）」しか書き込めません
-      ・タイル名・報酬・画像・種別・ならび順は、この画面のものが必ず優先されます
-   2) タイル管理は、タイル名をタップすると編集画面がひらく
-      アコーディオン形式になりました（開閉は自動更新でも維持されます）
-   3) 申請中（承認まち）は、日付が変わっても消えません
-      ・日付が変わると日々タイルの「達成」だけがリセットされます
-      ・申請中はそのまま残るので、翌日でも承認できます
-   4) おみせの商品・ガチャの内容は「全員共通」になりました
-      ・保存先は catalog/main の1か所だけ
-      ・こども画面を何ファイル作っても、商品名・ねだん・ガチャ景品は同じです
-      ・もちもの／ガチャの入手記録は、これまでどおり子どもごとに別々です
+   1) 商品・ガチャ景品も「アコーディオン形式」になりました
+      ・名前の行をタップ（クリック）すると編集画面がひらきます
+      ・開閉状態は自動更新でも維持されます（タイルと同じしくみ）
+      ・ならび順（ord）も編集できます
+   2) 申請中（承認まち）の「くりこし」
+      ・日付が変わるとき、申請中のタイルは
+        kids/{ID}/pendings に「くりこし申請」として書き出します
+      ・そのときタイル側の申請中は解除されるので、
+        こどもは翌日また同じタイルを申請できます
+      ・くりこし申請は承認／取消するまで残ります
+      ・保存キーはタイルごとに1つ（pd_タイルID）なので、
+        同じタイルの申請は いつも最新（＝前日ぶん）だけが残ります
+   3) ヘッダーに「承認まち」のお知らせを表示
+      ・0件＝灰色／1件以上＝赤くひかります
+      ・だれが何件かも出ます。押すとその子の承認まち画面へ移動します
+      ・ブラウザのタブ名にも (3) のように件数が出ます
 
-   ▼ 共有タイル（shared/tiles）は廃止のままです
-   ・日々／通常／特別のすべてを kids/{ID}/tiles だけで管理します
+   ▼ そのほか（前回から引き継ぎ）
+   ・タイルは日々／通常／特別のすべてを kids/{ID}/tiles で管理
+   ・こども画面が書き込むのは進捗（達成／申請中／かくれている）だけ
+   ・おみせの商品・ガチャの内容は catalog/main に1つだけ（全員共通）
+   ・共有タイル（shared/tiles）は廃止のままです
    ============================================================ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged }
@@ -314,6 +342,9 @@ const num = (v,d=0)=>{const n=Number(v); return isNaN(n)?d:n;};
 const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = t=>{ if(!t) return '-'; const d=new Date(t); return isNaN(d)?'-':
   (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+const fmtDay = s=>{ if(!s) return '-'; const d=new Date(s);
+  return isNaN(d) ? String(s) : ((d.getMonth()+1)+'/'+d.getDate()); };
+const yesterdayStr = ()=>new Date(Date.now()-86400000).toDateString();
 const safeKey = s=>String(s==null?'':s).replace(/[.#$/\[\]]/g,'_').slice(0,120) || 'k';
 function defaultName(id){
   if(NAME_MAP[id]) return NAME_MAP[id];
@@ -382,8 +413,10 @@ let fdb=null, uidAuth=null, cloud={}, connected=false, adminLastId=null;
 let profiles=[], currentId=null, db=null, tab='approve';
 let busy=false, dirty=false, seeded=false;
 const rolloverDone={};
-/* ★ タイル管理のアコーディオン開閉状態 */
-const openTiles=Object.create(null);
+/* ★ アコーディオンの開閉状態（キーは scope|id） */
+const openAcc=Object.create(null);
+/* ★ ヘッダーのお知らせ用 */
+let alertRows=[];
 
 /* --- 増殖対策のための状態 --- */
 const ID_RE = /^[A-Za-z0-9_-]{1,32}$/;   // 正しいこどもID
@@ -536,6 +569,8 @@ function kidLocal(kid){
     icons:{}, iconSize:{},
     /* ★ タイルは kids/{ID}/tiles だけ */
     tiles:listOf(s.tiles),
+    /* ★ くりこし申請（前日ぶんの申請中） */
+    pendings:listOf(s.pendings,'at'),
     /* ★ 商品・ガチャは全員共通カタログから */
     shopItems:listOf(cat.shopItems),
     gacha:{ cost:num(cat.gacha&&cat.gacha.cost,300), pool:listOf(cat.gacha&&cat.gacha.pool) },
@@ -557,6 +592,14 @@ function kidLocal(kid){
     t.icon=cleanIcon(t.icon,false); t.cardImage=cleanIcon(t.cardImage,true);
     t.rewardExp=num(t.rewardExp,0); t.rewardMoney=num(t.rewardMoney,0);
     t.completed=!!t.completed; t.pending=!!t.pending; t.archived=!!t.archived;
+  });
+  d.pendings.forEach(r=>{
+    if(!KIND_META[r.kind]) r.kind='daily';
+    r.label=String(r.label||'タイル');
+    r.tileId=String(r.tileId||'');
+    r.icon=cleanIcon(r.icon,false); r.cardImage=cleanIcon(r.cardImage,true);
+    r.rewardExp=num(r.rewardExp,0); r.rewardMoney=num(r.rewardMoney,0);
+    r.at=num(r.at,0); r.date=String(r.date||'');
   });
   d.shopItems.forEach(x=>{ x.name=String(x.name||'商品'); x.price=num(x.price,0);
     x.desc=String(x.desc||''); x.icon=cleanIcon(x.icon,false); });
@@ -603,6 +646,7 @@ function seedKid(kid){
     icons:Object.assign({},DEFAULT_ICONS),
     iconSize:Object.assign({},DEFAULT_ICON_SIZE),
     tiles:tiles,
+    pendings:{},
     inventory:{}, useRequests:{}, useHistory:{}, notify:{}, logs:{}, gachaSeen:{}
   };
 }
@@ -612,12 +656,16 @@ function toCloudKid(d){
     player:d.player, message:d.message||'', messageAt:num(d.messageAt,0),
     lastResetDate:d.lastResetDate||new Date().toDateString(),
     icons:d.icons||{}, iconSize:d.iconSize||{},
-    tiles:{}, inventory:{}, useRequests:{}, useHistory:{}, logs:{}
+    tiles:{}, pendings:{}, inventory:{}, useRequests:{}, useHistory:{}, logs:{}
   };
   (d.tiles||[]).forEach((t,i)=>{ const k=safeKey(t.id||('tl_'+uid()));
     o.tiles[k]={kind:t.kind||'daily',label:t.label||'タイル',icon:t.icon||'',cardImage:t.cardImage||'',
       rewardExp:num(t.rewardExp,0),rewardMoney:num(t.rewardMoney,0),
       completed:!!t.completed,pending:!!t.pending,archived:!!t.archived,ord:num(t.ord,(i+1)*10)}; });
+  (d.pendings||[]).forEach(r=>{ const k=safeKey(r.id||('pd_'+uid()));
+    o.pendings[k]={tileId:String(r.tileId||''),label:r.label||'タイル',kind:r.kind||'daily',
+      icon:r.icon||'',cardImage:r.cardImage||'',rewardExp:num(r.rewardExp,0),rewardMoney:num(r.rewardMoney,0),
+      at:num(r.at,Date.now()),date:String(r.date||'')}; });
   (d.inventory||[]).forEach(i=>{ o.inventory[safeKey(i.id||('inv_'+uid()))]=
     {refId:i.refId||'x',icon:i.icon||'',name:i.name||'アイテム',qty:num(i.qty,1)}; });
   (d.useRequests||[]).forEach(r=>{ o.useRequests[safeKey(r.id||('use_'+uid()))]=
@@ -727,21 +775,50 @@ function scheduleRender(){
 }
 document.addEventListener('focusout', ()=>setTimeout(()=>{ if(dirty && !typing() && !busy){ dirty=false; render(); } },250));
 
-/* ★ 申請中は日付が変わっても消えないので、archived でも承認できるようにする */
 function pendingTiles(d){ return d.tiles.filter(t=>t.pending && !t.completed); }
+function pendingCount(d){ return pendingTiles(d).length + d.pendings.length; }
+
+/* ★ ヘッダーのお知らせ */
+function pendingSummary(){
+  const rows=[];
+  profiles.forEach(p=>{
+    const d=kidLocal(p.id);
+    const n=pendingCount(d);
+    if(n>0) rows.push({id:p.id, name:d.player.name, n:n});
+  });
+  return rows;
+}
+function updateAlert(){
+  alertRows=pendingSummary();
+  const total=alertRows.reduce((a,r)=>a+r.n,0);
+  const btn=$('#alertBtn'), cnt=$('#alertCnt'), who=$('#alertWho');
+  if(!btn) return;
+  btn.classList.toggle('has', total>0);
+  cnt.textContent=total;
+  who.textContent = total ? alertRows.map(r=>r.name+' '+r.n).join('／') : 'なし';
+  btn.title = total
+    ? ('承認まち：'+alertRows.map(r=>r.name+'（'+r.id+'）'+r.n+'件').join('、')+'／押すとその子の画面をひらきます')
+    : '承認まちはありません';
+  document.title=(total? '('+total+') ':'')+'かんりしゃ画面｜せいかつクエスト';
+}
 
 function counts(){
   const ea=$('#cntApprove'), eu=$('#cntUse');
-  const a = db ? pendingTiles(db).length : 0;
+  const a = db ? pendingCount(db) : 0;
   const u = db ? db.useRequests.length : 0;
   ea.textContent=a; ea.classList.toggle('zero',a===0);
   eu.textContent=u; eu.classList.toggle('zero',u===0);
+  updateAlert();
 }
 function fillSelect(){
   const sel=$('#userSel');
   const cur=currentId;
   sel.innerHTML = profiles.length
-    ? profiles.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===cur?' selected':'')+'>'+esc(p.name||p.id)+'（'+esc(p.id)+'）</option>').join('')
+    ? profiles.map(p=>{
+        const n=pendingCount(kidLocal(p.id));
+        return '<option value="'+esc(p.id)+'"'+(p.id===cur?' selected':'')+'>'
+          +esc(p.name||p.id)+'（'+esc(p.id)+'）'+(n?'  ●承認まち'+n:'')+'</option>';
+      }).join('')
     : '<option value="">（いません）</option>';
 }
 function render(){
@@ -939,8 +1016,10 @@ function viewAll(){
   const panels = profiles.map(p=>{
     const d=kidLocal(p.id);
     const pend=pendingTiles(d);
+    const carry=d.pendings;
     const uses=d.useRequests;
     const pct=Math.min(100,Math.round(d.player.exp/d.player.expToNext*100));
+    const total=pend.length+carry.length;
     return '<section class="upanel'+(p.id===currentId?' cur':'')+'">'
       +'<div class="uhead">'+iconHTML(d.icons.star)+'<b>'+esc(d.player.name)+'</b>'
       +'<span class="uid">'+esc(p.id)+(p.id===currentId?'（編集中）':'')+'</span></div>'
@@ -951,13 +1030,20 @@ function viewAll(){
       +'<div class="kpi"><span class="k">もちもの</span><span class="v">'+d.inventory.length+'</span></div>'
       +'</div>'
       +(d.message ? '<div class="sect">いまのメッセージ</div><div class="msgprev">'+esc(d.message)+'</div>' : '')
-      +'<div class="sect">承認まち <span class="st '+(pend.length?'pending':'')+'">'+pend.length+'</span></div>'
+      +'<div class="sect">承認まち <span class="st '+(total?'pending':'')+'">'+total+'</span></div>'
       +(pend.length ? pend.map(t=>'<div class="prow">'+iconHTML(t.cardImage||t.icon)
           +'<span class="pn">'+esc(t.label)+'</span>'
           +'<span class="pg">EXP '+t.rewardExp+' / おかね '+t.rewardMoney+'</span>'
           +'<button class="btn ok sm" data-act="oapprove" data-uid="'+esc(p.id)+'" data-tid="'+esc(t.id)+'">承認</button>'
           +'<button class="btn sub sm" data-act="oreject" data-uid="'+esc(p.id)+'" data-tid="'+esc(t.id)+'">取消</button>'
-        +'</div>').join('') : '<div class="mini">ありません</div>')
+        +'</div>').join('') : '')
+      +(carry.length ? carry.map(r=>'<div class="prow">'+iconHTML(r.cardImage||r.icon)
+          +'<span class="pn">'+esc(r.label)+'</span>'
+          +'<span class="pg">'+esc(fmtDay(r.date))+'の申請／EXP '+r.rewardExp+' / おかね '+r.rewardMoney+'</span>'
+          +'<button class="btn ok sm" data-act="oapprovePd" data-uid="'+esc(p.id)+'" data-pid="'+esc(r.id)+'">承認</button>'
+          +'<button class="btn sub sm" data-act="orejectPd" data-uid="'+esc(p.id)+'" data-pid="'+esc(r.id)+'">取消</button>'
+        +'</div>').join('') : '')
+      +(total ? '' : '<div class="mini">ありません</div>')
       +'<div class="sect">使用中 <span class="st '+(uses.length?'pending':'')+'">'+uses.length+'</span></div>'
       +(uses.length ? uses.map(r=>'<div class="prow">'+iconHTML(r.icon)
           +'<span class="pn">'+esc(r.name)+'</span>'
@@ -988,29 +1074,59 @@ function tileHead(t){
 }
 function viewApprove(){
   const pend=pendingTiles(db);
+  const carry=db.pendings;
   const done=db.tiles.filter(t=>t.completed&&!t.archived);
-  return '<div class="card"><h2>承認まち（'+pend.length+'件）'+ownerTag()+'</h2><div class="grid">'
+  const total=pend.length+carry.length;
+  const others=alertRows.filter(r=>r.id!==currentId);
+  return (total
+      ? '<div class="card alertcard"><h2>承認まちが '+total+' 件あります '+ownerTag()+'</h2>'
+        +'<div class="hint">きょうの申請 '+pend.length+' 件／前日までのくりこし申請 '+carry.length+' 件です。</div></div>'
+      : '<div class="card"><h2>承認まちはありません '+ownerTag()+'</h2></div>')
+    +(others.length ? '<div class="card warncard"><h2>ほかの子にも承認まちがあります</h2>'
+      +'<div class="row">'+others.map(r=>'<button class="btn sm" data-act="switchTo" data-uid="'+esc(r.id)+'">'
+      +esc(r.name)+' '+r.n+'件</button>').join('')+'</div></div>' : '')
+    +'<div class="card"><h2>きょうの申請（'+pend.length+'件）</h2><div class="grid">'
     +(pend.length ? pend.map(t=>'<div class="item pend k-'+t.kind+'" data-scope="tiles" data-id="'+esc(t.id)+'">'+tileHead(t)
         +'<div class="btns"><button class="btn ok sm" data-act="approve">承認して報酬をあげる</button>'
         +'<button class="btn sub sm" data-act="reject">申請をとりけす</button></div></div>').join('')
-      : '<div class="empty">承認まちはありません</div>')
+      : '<div class="empty">ありません</div>')
+    +'</div></div>'
+    +'<div class="card'+(carry.length?' alertcard':'')+'"><h2>くりこし申請（'+carry.length+'件）'
+    +'<span class="hint">前日までに申請されたものです</span></h2><div class="grid">'
+    +(carry.length ? carry.map(r=>'<div class="item carry k-'+r.kind+'" data-scope="pendings" data-id="'+esc(r.id)+'">'
+        +'<div class="head">'+iconHTML(r.cardImage||r.icon)+'<span class="nm">'+esc(r.label)+'</span>'
+        +'<span class="kb kb-'+r.kind+'">'+KIND_META[r.kind].label+'</span></div>'
+        +'<div class="meta"><span>EXP '+r.rewardExp+'</span><span>おかね '+r.rewardMoney+'</span>'
+        +'<span class="st carry">'+esc(fmtDay(r.date))+'の申請</span></div>'
+        +'<div class="btns"><button class="btn ok sm" data-act="approvePd">承認して報酬をあげる</button>'
+        +'<button class="btn sub sm" data-act="rejectPd">この申請を取消</button></div></div>').join('')
+      : '<div class="empty">ありません</div>')
     +'</div>'
-    +'<div class="hint" style="margin-top:11px">★ 申請中のものは、日付が変わっても消えません。'
-    +'あとの日でもそのまま承認できます。</div></div>'
+    +(carry.length ? '<div class="row" style="margin-top:11px">'
+      +'<button class="btn ng sm" data-act="rejectAllPd">くりこし申請をまとめて取消</button></div>' : '')
+    +'<div class="hint" style="margin-top:11px">日付が変わるとき、申請中だったタイルは'
+    +'この「くりこし申請」に移し、タイル側の申請中は解除します。'
+    +'だからこどもは翌日もういちど同じタイルを申請できますし、前日の申請もここで承認できます。<br>'
+    +'同じタイルのくりこしは、いつも最新の1件（＝前日ぶん）だけが残ります。'
+    +'ここで承認すると報酬だけをわたします（きょうのタイルの状態は変わりません）。</div></div>'
     +'<div class="card"><h2>今日 達成ずみ（'+done.length+'件）</h2><div class="grid">'
     +(done.length ? done.map(t=>'<div class="item k-'+t.kind+'" data-scope="tiles" data-id="'+esc(t.id)+'">'+tileHead(t)
         +'<div class="btns"><button class="btn sub sm" data-act="undo">未達成に戻す（報酬も取消）</button></div></div>').join('')
       : '<div class="empty">まだありません</div>')
-    +'</div><div class="hint" style="margin-top:11px">日々タイルは翌日0時に「達成」だけリセットされます（申請中はそのまま）。'
+    +'</div><div class="hint" style="margin-top:11px">日々タイルは翌日0時に「達成」だけリセットされます。'
     +'通常・特別タイルは達成すると翌日に消えます'
     +'（タイル管理の「かくれているタイル」から復活できます）。</div></div>';
 }
 
-/* ================= タイル管理（★ アコーディオン） ================= */
+/* ================= アコーディオンの共通部品 ================= */
+function accOpen(scope,id){ return !!openAcc[scope+'|'+id]; }
+function accMark(open){ return '<span class="acc-mark">'+(open?'▲':'▼')+'</span>'; }
+
+/* ================= タイル管理（アコーディオン） ================= */
 function tileEditor(t){
-  const open=!!openTiles[t.id];
-  const head='<div class="acc-head" data-act="toggleTile">'
-    +'<span class="acc-mark">'+(open?'▲':'▼')+'</span>'
+  const open=accOpen('tiles',t.id);
+  const head='<div class="acc-head" data-act="toggleAcc">'
+    +accMark(open)
     +iconHTML(t.cardImage||t.icon)
     +'<span class="nm">'+esc(t.label)+'</span>'
     +'<span class="kb kb-'+t.kind+'">'+KIND_META[t.kind].label+'</span>'
@@ -1125,7 +1241,8 @@ function viewStatus(){
     +'<div class="row"><label>レベル</label><input type="number" id="p_lv" value="'+p.level+'"></div>'
     +'<div class="row"><button class="btn ok" data-act="saveP">保存する</button>'
     +'<button class="btn sub" data-act="resetDaily">日々タイルを今すぐリセット</button></div>'
-    +'<div class="hint">リセットしても「申請中」は消えません（あとで承認できます）。<br>'
+    +'<div class="hint">リセットすると、申請中だったタイルは「くりこし申請」に移り、'
+    +'タイルは また申請できる状態になります（あとから承認できます）。<br>'
     +'保存先：<code>'+esc(KIDS)+'/'+esc(currentId)+'</code>（Firestore）／こども用ファイル：'
     +'<code>'+esc(currentId)+'_app.html</code>／最終リセット日：'+esc(db.lastResetDate||'-')+'</div></div>'
     +'<div class="card"><h2>りれき</h2><div class="log">'
@@ -1133,26 +1250,63 @@ function viewStatus(){
     +'</div><div class="row" style="margin-top:11px"><button class="btn sub sm" data-act="clearLog">りれきを消す</button></div></div>';
 }
 
-/* ================= おみせ・ガチャ（★ 全員共通） ================= */
+/* ================= おみせ・ガチャ（全員共通／★アコーディオン） ================= */
+function shopEditor(s){
+  const open=accOpen('shopItems',s.id);
+  const head='<div class="acc-head" data-act="toggleAcc">'
+    +accMark(open)+iconHTML(s.icon)
+    +'<span class="nm">'+esc(s.name)+'</span>'
+    +'<span class="st">おかね '+s.price+'</span>'
+    +'<span class="accmeta">'+esc(s.desc||'せつめいなし')+'</span>'
+    +'</div>';
+  const body='<div class="acc-body">'
+    +'<div class="fields col">'
+    +'<div><label>なまえ</label><input data-f="name" value="'+esc(s.name)+'"></div>'
+    +'<div><label>ねだん</label><input type="number" data-f="price" value="'+s.price+'"></div>'
+    +'<div><label>せつめい</label><input data-f="desc" value="'+esc(s.desc)+'"></div>'
+    +'<div><label>ならび順</label><input type="number" data-f="ord" value="'+num(s.ord,0)+'" min="0" step="10"><span class="hint">小さいほど前に表示</span></div>'
+    +'</div>'
+    +imgField({scope:'shopItems',id:s.id,field:'icon',val:s.icon,label:'商品の画像',ph:'icon_xxx.png'})
+    +'<div class="btns"><button class="btn gold sm" data-act="saveOne">この1件を保存</button>'
+    +'<button class="btn sub sm" data-act="giveShop">プレゼント（'+esc(db.player.name)+'に）</button>'
+    +'<button class="btn ng sm" data-act="delShop">削除</button></div>'
+    +'</div>';
+  return '<div class="item acc'+(open?' open':'')+'" data-scope="shopItems" data-id="'+esc(s.id)+'">'+head+body+'</div>';
+}
+function prizeEditor(g,total){
+  const open=accOpen('gachaPool',g.id);
+  const pct=(g.weight/total*100).toFixed(1);
+  const head='<div class="acc-head" data-act="toggleAcc">'
+    +accMark(open)+iconHTML(g.icon)
+    +'<span class="nm">'+esc(g.name)+'</span>'
+    +'<span class="st">'+esc(g.rarity)+'／'+pct+'%</span>'
+    +'<span class="accmeta">重み '+g.weight+'</span>'
+    +'</div>';
+  const body='<div class="acc-body">'
+    +'<div class="fields col">'
+    +'<div><label>なまえ</label><input data-f="name" value="'+esc(g.name)+'"></div>'
+    +'<div><label>レア度</label><input data-f="rarity" value="'+esc(g.rarity)+'"></div>'
+    +'<div><label>重み（出やすさ）</label><input type="number" data-f="weight" value="'+g.weight+'"><span class="hint">いまの確率 '+pct+'%</span></div>'
+    +'<div><label>ならび順</label><input type="number" data-f="ord" value="'+num(g.ord,0)+'" min="0" step="10"><span class="hint">小さいほど前に表示</span></div>'
+    +'</div>'
+    +imgField({scope:'gachaPool',id:g.id,field:'icon',val:g.icon,label:'景品の画像',ph:'icon_xxx.png'})
+    +'<div class="btns"><button class="btn gold sm" data-act="saveOne">この1件を保存</button>'
+    +'<button class="btn sub sm" data-act="givePrize">プレゼント（'+esc(db.player.name)+'に）</button>'
+    +'<button class="btn ng sm" data-act="delPrize">削除</button></div>'
+    +'</div>';
+  return '<div class="item acc'+(open?' open':'')+'" data-scope="gachaPool" data-id="'+esc(g.id)+'">'+head+body+'</div>';
+}
 function viewShop(){
   const total=db.gacha.pool.reduce((a,g)=>a+g.weight,0)||1;
   return '<div class="card"><h2>おみせ・ガチャは「ぜんいん共通」です '+sharedTag()+'</h2>'
     +'<div class="hint">商品名・ねだん・せつめい・画像・ガチャの景品とねだんは、'
     +'<code>'+esc(CATALOG)+'/'+esc(CATALOG_DOC)+'</code> に1つだけ保存されます。'
     +'こども画面を何ファイル作っても、すべて同じ内容になります。<br>'
-    +'もちもの・ガチャの入手記録（？のひらき方）は、これまでどおり子どもごとに別々です。</div></div>'
-    +'<div class="card"><h2>商品（'+db.shopItems.length+'）'+sharedTag()+'</h2><div class="grid wide">'
-    +(db.shopItems.length ? db.shopItems.map(s=>'<div class="item" data-scope="shopItems" data-id="'+esc(s.id)+'">'
-        +'<div class="head">'+iconHTML(s.icon)+'<span class="nm">'+esc(s.name)+'</span><span class="st">おかね '+s.price+'</span></div>'
-        +'<div class="fields">'
-        +'<div><label>なまえ</label><input data-f="name" value="'+esc(s.name)+'"></div>'
-        +'<div><label>ねだん</label><input type="number" data-f="price" value="'+s.price+'"></div>'
-        +'<div><label>せつめい</label><input data-f="desc" value="'+esc(s.desc)+'"></div></div>'
-        +imgField({scope:'shopItems',id:s.id,field:'icon',val:s.icon,label:'商品の画像',ph:'icon_xxx.png'})
-        +'<div class="btns"><button class="btn gold sm" data-act="saveOne">この1件を保存</button>'
-        +'<button class="btn sub sm" data-act="giveShop">プレゼント（'+esc(db.player.name)+'に）</button>'
-        +'<button class="btn ng sm" data-act="delShop">削除</button></div></div>').join('')
-      : '<div class="empty">商品がありません</div>')
+    +'もちもの・ガチャの入手記録（？のひらき方）は、これまでどおり子どもごとに別々です。<br>'
+    +'★ 商品名・景品名の行をタップ（クリック）すると、編集画面がひらきます。</div></div>'
+    +'<div class="card"><h2>商品（'+db.shopItems.length+'）'+sharedTag()+'</h2>'
+    +'<div class="grid one">'
+    +(db.shopItems.length ? db.shopItems.map(shopEditor).join('') : '<div class="empty">商品がありません</div>')
     +'</div>'
     +'<div class="row" style="margin-top:13px"><button class="btn gold" data-act="saveEdits">商品・景品の編集をまとめて保存</button></div>'
     +'<div class="row" style="align-items:flex-start">'
@@ -1164,19 +1318,8 @@ function viewShop(){
     +'<div class="card"><h2>ガチャ（1回 '+db.gacha.cost+'）'+sharedTag()+'</h2>'
     +'<div class="row"><label>1回のねだん</label><input type="number" id="g_cost" value="'+db.gacha.cost+'">'
     +'<button class="btn sub sm" data-act="saveCost">ねだんを保存</button></div>'
-    +'<div class="grid wide">'
-    +(db.gacha.pool.length ? db.gacha.pool.map(g=>'<div class="item" data-scope="gachaPool" data-id="'+esc(g.id)+'">'
-        +'<div class="head">'+iconHTML(g.icon)+'<span class="nm">'+esc(g.name)+'</span>'
-        +'<span class="st">'+esc(g.rarity)+'／'+(g.weight/total*100).toFixed(1)+'%</span></div>'
-        +'<div class="fields">'
-        +'<div><label>なまえ</label><input data-f="name" value="'+esc(g.name)+'"></div>'
-        +'<div><label>レア度</label><input data-f="rarity" value="'+esc(g.rarity)+'"></div>'
-        +'<div><label>重み</label><input type="number" data-f="weight" value="'+g.weight+'"></div></div>'
-        +imgField({scope:'gachaPool',id:g.id,field:'icon',val:g.icon,label:'景品の画像',ph:'icon_xxx.png'})
-        +'<div class="btns"><button class="btn gold sm" data-act="saveOne">この1件を保存</button>'
-        +'<button class="btn sub sm" data-act="givePrize">プレゼント（'+esc(db.player.name)+'に）</button>'
-        +'<button class="btn ng sm" data-act="delPrize">削除</button></div></div>').join('')
-      : '<div class="empty">景品がありません</div>')
+    +'<div class="grid one">'
+    +(db.gacha.pool.length ? db.gacha.pool.map(g=>prizeEditor(g,total)).join('') : '<div class="empty">景品がありません</div>')
     +'</div>'
     +'<div class="row" style="align-items:flex-start;margin-top:13px">'
     +'<input id="g_name" placeholder="景品名" style="flex:1;min-width:140px">'
@@ -1184,7 +1327,8 @@ function viewShop(){
     +'<input type="number" id="g_weight" placeholder="重み" value="10">'
     +'<div style="flex:1;min-width:240px">'
     +imgField({scope:'new',id:'new',field:'prizeIcon',val:newImg.prizeIcon,label:'景品の画像',ph:'icon_xxx.png',attr:'data-skip'})
-    +'</div><button class="btn" data-act="addPrize">追加</button></div></div>';
+    +'</div><button class="btn" data-act="addPrize">追加</button></div>'
+    +'<div class="hint">重みの合計 '+total+' にたいする割合で当たります。</div></div>';
 }
 
 /* ================= 見た目 ================= */
@@ -1235,10 +1379,14 @@ function oldKidShopIds(){
   });
 }
 function viewData(){
-  const rows = profiles.map(p=>'<div class="childrow"><b>'+esc(p.name||p.id)+'</b><code>'+esc(p.id)+'</code>'
-    +'<a class="linka" href="./'+esc(p.id)+'_app.html" target="_blank" rel="noopener">'+esc(p.id)+'_app.html をひらく</a>'
-    +'<button class="btn sm" data-act="switchTo" data-uid="'+esc(p.id)+'">編集する</button>'
-    +'<button class="btn ng sm" data-act="delChild" data-uid="'+esc(p.id)+'">削除</button></div>').join('');
+  const rows = profiles.map(p=>{
+    const n=pendingCount(kidLocal(p.id));
+    return '<div class="childrow"><b>'+esc(p.name||p.id)+'</b><code>'+esc(p.id)+'</code>'
+      +(n?'<span class="st pending">承認まち '+n+'</span>':'')
+      +'<a class="linka" href="./'+esc(p.id)+'_app.html" target="_blank" rel="noopener">'+esc(p.id)+'_app.html をひらく</a>'
+      +'<button class="btn sm" data-act="switchTo" data-uid="'+esc(p.id)+'">編集する</button>'
+      +'<button class="btn ng sm" data-act="delChild" data-uid="'+esc(p.id)+'">削除</button></div>';
+  }).join('');
   const old=oldKidShopIds();
   return '<div class="card"><h2>こどもの管理（'+profiles.length+'人）</h2>'+(rows||'<div class="empty">いません</div>')
     +'<div class="row" style="margin-top:13px"><button class="btn ok" data-act="addChild">＋こどもを追加</button>'
@@ -1246,6 +1394,13 @@ function viewData(){
     +'<div class="hint">IDとファイル名が対応します：<code>yuika</code> → <code>yuika_app.html</code>。'
     +'レベル画像は <code>image/lv/yuika_01.png</code> のように置いてください。<br>'
     +'この一覧に出るのは <code>'+esc(PROFILES)+'</code> に登録されている子だけです。</div></div>'
+
+    +'<div class="card"><h2>申請（承認まち）のしくみ</h2>'
+    +'<div class="hint">きょうの申請：<code>'+esc(KIDS)+'/{ID}</code> の <code>tiles.*.pending</code><br>'
+    +'くりこし申請：<code>'+esc(KIDS)+'/{ID}</code> の <code>pendings.pd_タイルID</code><br>'
+    +'日付が変わるとき、申請中のタイルは くりこし申請に移し、タイル側の申請中は解除します。'
+    +'同じタイルのくりこしは、いつも最新の1件（＝前日ぶん）だけが残ります。<br>'
+    +'いまのくりこし申請：'+db.pendings.length+'件（'+esc(db.player.name)+'）</div></div>'
 
     +'<div class="card"><h2>おみせ・ガチャ（ぜんいん共通）</h2>'
     +'<div class="hint">保存先：<code>'+esc(CATALOG)+'/'+esc(CATALOG_DOC)+'</code>（1か所だけ）<br>'
@@ -1290,7 +1445,7 @@ function viewData(){
     +'<textarea id="jsonBox" spellcheck="false">'+esc(JSON.stringify(db,null,1))+'</textarea>'
     +'<div class="row" style="margin-top:11px"><button class="btn ok" data-act="importOne">上の内容を読み込む</button>'
     +'<button class="btn ng" data-act="wipeOne">このこのデータを初期化</button></div>'
-    +'<div class="hint">読み込み・初期化では、共通の商品・ガチャは変わりません（タイル・もちもの・メッセージなどが対象です）。</div></div>';
+    +'<div class="hint">読み込み・初期化では、共通の商品・ガチャは変わりません（タイル・くりこし申請・もちもの・メッセージなどが対象です）。</div></div>';
 }
 
 /* ================= 入力の収集 ================= */
@@ -1347,6 +1502,25 @@ function download(name,href){
   document.body.appendChild(a); a.click(); a.remove();
 }
 
+/* ================= ★ 申請中のくりこし ================= */
+/* 申請中のタイルを pendings に移し、タイル側の pending を解除します。
+   キーはタイルごとに1つなので、いつも最新（＝前日ぶん）だけが残ります。 */
+function carryPending(kid, d, o, dateKey){
+  let n=0;
+  d.tiles.filter(t=>t.pending && !t.completed).forEach(t=>{
+    const key='pd_'+safeKey(t.id);
+    o[kidPath(kid,'pendings',key)]={
+      tileId:String(t.id), label:t.label, kind:t.kind,
+      icon:t.icon||'', cardImage:t.cardImage||'',
+      rewardExp:num(t.rewardExp,0), rewardMoney:num(t.rewardMoney,0),
+      at:Date.now(), date:String(dateKey||'')
+    };
+    o[kidPath(kid,'tiles',t.id,'pending')]=false;
+    n++;
+  });
+  return n;
+}
+
 /* ================= こどもの追加（多重実行しない） ================= */
 async function addChild(){
   if(addingChild) return;
@@ -1381,11 +1555,12 @@ document.addEventListener('click', async e=>{
   const id=box?box.dataset.id:null;
   const scope=box?box.dataset.scope:null;
 
-  /* --- ★ アコーディオンの開閉 --- */
-  if(act==='toggleTile'){
+  /* --- ★ アコーディオンの開閉（タイル・商品・景品 共通） --- */
+  if(act==='toggleAcc'){
     if(!box) return;
+    const key=box.dataset.scope+'|'+box.dataset.id;
     const open=box.classList.toggle('open');
-    if(open) openTiles[box.dataset.id]=1; else delete openTiles[box.dataset.id];
+    if(open) openAcc[key]=1; else delete openAcc[key];
     const mk=box.querySelector('.acc-mark');
     if(mk) mk.textContent = open ? '▲' : '▼';
     return;
@@ -1410,7 +1585,7 @@ document.addEventListener('click', async e=>{
   }
   if(act==='recheckShared'){ checkLegacyShared(); toast('しらべました'); return; }
 
-  /* --- ★ こどもごとに残った古い商品・ガチャの整理 --- */
+  /* --- こどもごとに残った古い商品・ガチャの整理 --- */
   if(act==='cleanKidShop'){
     const ids=oldKidShopIds();
     if(!ids.length){ toast('ありません'); return; }
@@ -1473,7 +1648,7 @@ document.addEventListener('click', async e=>{
     if(!kid || !profiles.some(p=>p.id===kid)) return;
     currentId=kid; tab='approve';
     document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab==='approve'));
-    render(); toast(currentId+' を編集します'); return;
+    render(); window.scrollTo(0,0); toast(currentId+' を編集します'); return;
   }
 
   /* --- みんなタブ（ほかの子への操作） --- */
@@ -1490,6 +1665,20 @@ document.addEventListener('click', async e=>{
     }else{
       o[kidPath(kid,'tiles',tid,'pending')]=false;
       addLog(o,kid,'「'+t.label+'」の申請を取消');
+    }
+    if(await push(o)) toast('更新しました');
+    return;
+  }
+  if(act==='oapprovePd'||act==='orejectPd'){
+    const kid=btn.dataset.uid, pid=btn.dataset.pid;
+    if(!kid||!pid) return;
+    const d=kidLocal(kid), r=d.pendings.find(x=>x.id===pid); if(!r) return;
+    const o={}; o[kidPath(kid,'pendings',pid)]=null;
+    if(act==='oapprovePd'){
+      addLog(o,kid,'くりこし申請「'+r.label+'」を承認（+'+r.rewardExp+'EXP / +'+r.rewardMoney+'）');
+      await txPlayer(kid, grantFn(r.rewardExp,r.rewardMoney));
+    }else{
+      addLog(o,kid,'くりこし申請「'+r.label+'」を取消');
     }
     if(await push(o)) toast('更新しました');
     return;
@@ -1518,6 +1707,31 @@ document.addEventListener('click', async e=>{
     if(!collectBox(box,o)){ toast('保存対象が見つかりません',true); return; }
     addLog(o,currentId,'1件を保存');
     if(await push(o)) toast('この1件を保存しました');
+    return;
+  }
+
+  /* --- くりこし申請 --- */
+  if(act==='approvePd' && id){
+    const r=db.pendings.find(x=>x.id===id); if(!r) return;
+    const o={}; o[kidPath(currentId,'pendings',id)]=null;
+    addLog(o,currentId,'くりこし申請「'+r.label+'」を承認（+'+r.rewardExp+'EXP / +'+r.rewardMoney+'）');
+    await txPlayer(currentId, grantFn(r.rewardExp,r.rewardMoney));
+    if(await push(o)) toast('承認しました（報酬をわたしました）');
+    return;
+  }
+  if(act==='rejectPd' && id){
+    const r=db.pendings.find(x=>x.id===id); if(!r) return;
+    const o={}; o[kidPath(currentId,'pendings',id)]=null;
+    addLog(o,currentId,'くりこし申請「'+r.label+'」を取消');
+    if(await push(o)) toast('取り消しました');
+    return;
+  }
+  if(act==='rejectAllPd'){
+    if(!db.pendings.length){ toast('ありません'); return; }
+    if(!confirm('くりこし申請 '+db.pendings.length+' 件をまとめて取消します。\n（報酬はわたしません）')) return;
+    const o={}; db.pendings.forEach(r=>{ o[kidPath(currentId,'pendings',r.id)]=null; });
+    addLog(o,currentId,'くりこし申請'+db.pendings.length+'件を取消');
+    if(await push(o)) toast('取り消しました');
     return;
   }
 
@@ -1573,8 +1787,10 @@ document.addEventListener('click', async e=>{
     const t=db.tiles.find(x=>x.id===id); if(!t) return;
     if(!confirm('「'+t.label+'」を削除しますか？\n（'+db.player.name+' のタイルだけを消します）')) return;
     const o={}; o[kidPath(currentId,'tiles',id)]=null;
+    const pd=db.pendings.find(r=>r.tileId===id);
+    if(pd) o[kidPath(currentId,'pendings',pd.id)]=null;
     addLog(o,currentId,'タイル削除：'+t.label);
-    delete openTiles[id];
+    delete openAcc['tiles|'+id];
     if(await push(o)) toast('削除しました');
     return;
   }
@@ -1661,7 +1877,7 @@ document.addEventListener('click', async e=>{
     return;
   }
 
-  /* --- おみせ（★ 全員共通カタログ） --- */
+  /* --- おみせ（全員共通カタログ） --- */
   if(act==='giveShop' && id){
     const s=db.shopItems.find(x=>x.id===id); if(!s) return;
     await txInventory(currentId, inv=>invAdd(inv,s.id,s.icon,s.name,1));
@@ -1676,6 +1892,7 @@ document.addEventListener('click', async e=>{
     if(!confirm('「'+s.name+'」を削除しますか？\n（ぜんいんのお店から消えます）')) return;
     const o={}; o[P('catalog','shopItems',id)]=null;
     addLog(o,currentId,'商品削除（共通）：'+s.name);
+    delete openAcc['shopItems|'+id];
     if(await push(o)) toast('削除しました');
     return;
   }
@@ -1711,6 +1928,7 @@ document.addEventListener('click', async e=>{
     if(!confirm('「'+g.name+'」を削除しますか？\n（ぜんいんのガチャから消えます）')) return;
     const o={}; o[P('catalog','gacha','pool',id)]=null;
     addLog(o,currentId,'景品削除（共通）：'+g.name);
+    delete openAcc['gachaPool|'+id];
     if(await push(o)) toast('削除しました');
     return;
   }
@@ -1762,11 +1980,12 @@ document.addEventListener('click', async e=>{
   }
   if(act==='resetDaily'){
     const o={};
+    const n=carryPending(currentId, db, o, db.lastResetDate||yesterdayStr());
     db.tiles.forEach(t=>{ if(t.kind==='daily' && t.completed){
       o[kidPath(currentId,'tiles',t.id,'completed')]=false; } });
     o[kidPath(currentId,'lastResetDate')]=new Date().toDateString();
-    addLog(o,currentId,'日々タイルをリセット（申請中はそのまま）');
-    if(await push(o)) toast('リセットしました（申請中はのこしました）');
+    addLog(o,currentId,'日々タイルをリセット（申請中'+n+'件はくりこし申請へ）');
+    if(await push(o)) toast('リセットしました（申請中'+n+'件はくりこしました）');
     return;
   }
   if(act==='clearLog'){
@@ -1829,7 +2048,7 @@ document.addEventListener('click', async e=>{
   }
 });
 
-/* ================= タブ・セレクト ================= */
+/* ================= タブ・セレクト・ヘッダー通知 ================= */
 document.querySelectorAll('.tab').forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
@@ -1838,9 +2057,17 @@ document.querySelectorAll('.tab').forEach(b=>{
 });
 $('#userSel').onchange=e=>{ if(!e.target.value) return; currentId=e.target.value; render(); };
 $('#addBtn').onclick=addChild;
+$('#alertBtn').onclick=()=>{
+  if(!alertRows.length){ toast('承認まちはありません'); return; }
+  const hit = alertRows.find(r=>r.id===currentId) || alertRows[0];
+  currentId=hit.id; tab='approve';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab==='approve'));
+  render(); window.scrollTo(0,0);
+};
 
 /* ================= 日付が変わったときの処理 =================
-   ★ 申請中（pending）は消しません。日付が変わっても承認できます    */
+   ★ 申請中は「くりこし申請」に移します。
+      タイル側の申請中は解除するので、こどもは翌日また申請できます。   */
 async function autoRollover(){
   if(rolling) return;
   rolling=true;
@@ -1853,15 +2080,17 @@ async function autoRollover(){
       if(d.lastResetDate===today){ rolloverDone[p.id+today]=1; continue; }
       rolloverDone[p.id+today]=1;
       const o={};
+      /* 前日ぶんの申請中を くりこし申請へ（タイルは再申請できる状態に戻る） */
+      const n=carryPending(p.id, d, o, d.lastResetDate||yesterdayStr());
       d.tiles.forEach(t=>{
         if(t.kind==='daily'){
           if(t.completed) o[kidPath(p.id,'tiles',t.id,'completed')]=false;
-          /* pending はそのまま残す */
-        }else if(t.completed && !t.archived && !t.pending){
+        }else if(t.completed && !t.archived){
           o[kidPath(p.id,'tiles',t.id,'archived')]=true;
         }
       });
       o[kidPath(p.id,'lastResetDate')]=today;
+      if(n) addLog(o,p.id,'日付がかわりました（申請中'+n+'件をくりこし申請にしました）');
       await push(o);
     }
   } finally { rolling=false; }
@@ -1940,6 +2169,8 @@ function afterCloud(){
   scheduleRender();
   autoRollover();
 }
+/* 日付が変わったころにも自動でチェック（開いたままにしていても動きます） */
+setInterval(()=>{ if(profiles.length) autoRollover(); }, 5*60*1000);
 setConn(false);
 start();
 </script>
