@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head><script>(function(w,i,g){w[g]=w[g]||[];if(typeof w[g].push=='function')w[g].push(i)})
-(window,'GTM-K3QN3TWK','google_tags_first_party');</script><script>(function(w,d,s,l){w[l]=w[l]||[];(function(){w[l].push(arguments);})('set', 'developer_id.dY2E1Nz', true);
-		var f=d.getElementsByTagName(s)[0],
-		j=d.createElement(s);j.async=true;j.src='/gk7x/';
-		f.parentNode.insertBefore(j,f);
-		})(window,document,'script','dataLayer');</script>
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>せいかつクエスト</title>
@@ -473,9 +468,23 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   box-shadow:inset 0 3px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.20), 0 4px 0 #4a4a4a;
 }
 .gacha-box{background:var(--cream); border:3px solid var(--wood-darker); border-radius:12px; padding:14px; text-align:center;}
-.gacha-emoji{
-  width:calc(var(--ic-gacha)*var(--ic-scale)); height:calc(var(--ic-gacha)*var(--ic-scale));
-  margin:0 auto; object-fit:contain; image-rendering:pixelated;
+
+/* ==========================================================
+   ★ 追加：ガチャ画面の絵（image/assets/scene_gachamachine.png）
+      画像ぜんたいが見えるように、大きく・比率そのままで表示します
+   ========================================================== */
+.gacha-stage{
+  position:relative; width:100%; margin:0 auto 10px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  background:linear-gradient(180deg,#fff6da,#efdcab);
+  border:3px solid var(--wood-darker); border-radius:12px; padding:8px;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.5);
+}
+img.gacha-emoji{
+  width:100%; max-width:320px; height:auto;
+  max-height:calc(var(--ic-gacha)*var(--ic-scale)*2.6);
+  margin:0 auto; display:block;
+  object-fit:contain; image-rendering:pixelated;
 }
 .gacha-desc{font-size:12px; color:#5c4028; margin:6px 0 10px;}
 .gacha-cost{font-size:20px; color:var(--gold-dark); font-weight:bold; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:6px;}
@@ -570,6 +579,28 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 .modal-box .name{font-size:16px; font-weight:bold; color:var(--wood-darker); margin-bottom:14px;}
 .modal-box .close-btn{background:var(--purple); color:#fff; border:2px solid var(--purple-dark); border-radius:8px; padding:8px 22px; font-family:inherit; cursor:pointer;}
 
+/* ==========================================================
+   ★ 追加：ガチャの演出（image/assets/gatyaGIF.gif）
+      ガチャを回す → GIFを再生 → 3秒とまる → 結果モーダル
+   ========================================================== */
+.gacha-anim{
+  position:fixed; inset:0; z-index:150; padding:16px;
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  background:rgba(8,5,2,.94); cursor:pointer;
+}
+.gacha-anim.show{display:flex;}
+.gacha-anim .anim-pic{
+  width:100%; max-width:min(94vw,760px); max-height:66vh;
+  object-fit:contain; display:block; background:#000;
+  border:4px solid var(--gold); border-radius:14px;
+  box-shadow:0 0 30px rgba(255,190,60,.35);
+}
+.gacha-anim .anim-cap{
+  color:#ffe9a8; font-size:17px; font-weight:bold; text-align:center;
+  text-shadow:2px 2px 0 rgba(0,0,0,.6); line-height:1.5;
+}
+.gacha-anim .anim-hint{color:#cbb98f; font-size:11.5px; text-align:center;}
+
 /* ===== レベルコレクション ===== */
 .gallery-wrap{
   margin-top:12px; background:var(--blue-dark);
@@ -631,6 +662,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   .status-card .exp-text{font-size:14px;}
   .avatar-stage{aspect-ratio:2/1; height:auto;}
   .msg-body{max-height:88px; font-size:13px;}
+  .gacha-anim .anim-cap{font-size:14.5px;}
 }
 /* スマホ：アプリ枠をやめて全画面表示（ページの上下スクロールも停止） */
 @media (max-width:767px){
@@ -647,6 +679,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   body{padding:6px; align-items:stretch;}
   .app{height:calc(100dvh - 12px);}
   .avatar-stage{aspect-ratio:2/1; height:auto;}
+  .gacha-anim .anim-pic{max-height:58vh;}
 }
 @media (prefers-reduced-motion: reduce){
   .done-spark, .done-spark::before, .done-spark i,
@@ -735,7 +768,10 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       </div>
       <div class="shop-panel" id="panel-gacha">
         <div class="gacha-box">
-          <img class="gacha-emoji" data-icon="gacha" data-fb="🎰" src="image/assets/scene_gachamachine.png" alt="ガチャ">
+          <!-- ★ ガチャの絵：image/assets/scene_gachamachine.png -->
+          <div class="gacha-stage">
+            <img class="gacha-emoji" data-icon="gacha" data-fb="🎰" src="image/assets/scene_gachamachine.png" alt="ガチャ">
+          </div>
           <div class="gacha-desc">レアなアイテムをゲット！</div>
           <div class="gacha-cost">1回 <img class="icon-img lg" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"> <span id="gachaCostText">300</span></div>
           <button class="gacha-btn" id="gachaBtn">ガチャを回す</button>
@@ -761,6 +797,14 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ★ 追加：ガチャの演出（gatyaGIF.gif を再生 → 3秒とまってから結果） -->
+<div class="gacha-anim" id="gachaAnim" aria-hidden="true">
+  <img class="anim-pic" id="gachaAnimGif" src="" alt="ガチャ演出">
+  <div class="anim-cap" id="gachaAnimCap">ガチャを回しています…</div>
+  <div class="anim-hint">画面をタップすると結果にすすみます</div>
+</div>
+
 <div class="modal-back" id="gachaModal">
   <div class="modal-box">
     <div class="big-icon" id="modalIcon">🎁</div>
@@ -782,6 +826,8 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
    ▼ だれの画面かは「ファイル名」で自動判定します
       yuika_app.html → yuika（ゆいか）
       touri_app.html → touri（とうり）
+      ★追加：touri_app2.html のように、うしろに数字がついても
+              ちゃんと touri と判定します
       2人分まったく同じ中身でOKです
    ▼ タイルのあつかい
       日々タイル・通常タイル・特別タイル
@@ -802,6 +848,11 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       どのファイル（yuika_app / touri_app / user3_app …）でも
       同じ商品名・同じガチャ内容が表示されます。
       どこか1つで内容が変わると、ほかのファイルにも自動でそろいます。
+   ▼ ★追加④ ガチャの見た目と演出
+      ・ガチャ画面に image/assets/scene_gachamachine.png を大きく表示
+      ・ガチャを回すと image/assets/gatyaGIF.gif を全画面で再生し、
+        再生がおわったところで止めて3秒まってから結果を出します
+        （長さは下の GACHA_ANIM で調整できます）
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -809,7 +860,8 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
    ========================================================== */
 function detectAppId(){
   const file = decodeURIComponent((location.pathname.split('/').pop() || '').trim());
-  const m = file.match(/^(.+?)_app\.html?$/i);
+  /* ★追加：touri_app.html / touri_app2.html / touri_app-2.html などにも対応 */
+  const m = file.match(/^(.+?)_app[-_]?\d*\.html?$/i);
   return (m && m[1]) ? m[1] : 'yuika';
 }
 const NAME_MAP = { yuika:'ゆいか', touri:'とうり' };
@@ -878,6 +930,7 @@ const DEFAULT_ICONS = {
   coin         : A + 'coin.gif',
   star         : A + 'star.gif',
   gacha        : A + 'scene_gachamachine.png',
+  gachaGif     : A + 'gatyaGIF.gif',       /* ★追加 ガチャを回したときの演出GIF */
   gachaUnknown : A + 'icon_unknown.png',   /* ★ まだ取得していない景品用のアイコン */
   navHome      : A + 'icon_nav_home.png',
   navStatus    : A + 'icon_nav_status.png',
@@ -889,6 +942,13 @@ const DEFAULT_ICON_SIZE = {
   sm:16, lg:22, status:28, money:34, reward:14,
   tile:58, inv:26, shop:30, use:22, nav:26, gacha:110
 };
+
+/* ==========================================================
+   ★追加 ガチャ演出のじかん（ミリ秒）
+     playMs … gatyaGIF.gif を再生する長さ（GIF 1周ぶんに合わせてください）
+     holdMs … 再生がおわってから結果を出すまでの停止時間（ご指定の3秒）
+   ========================================================== */
+const GACHA_ANIM = { playMs:3000, holdMs:3000 };
 
 const KIND_META = {
   daily  :{label:'日々', title:'☀ 日々のタイル', note:'毎日24時に達成だけリセット'},
@@ -935,6 +995,7 @@ function fixTile(v){
    画像フォールバック
    ========================================================== */
 const brokenSrc = new Set();
+let gachaGifBroken = false;          /* ★追加 演出GIFが無いときは演出をとばす */
 let rerenderTimer = null;
 function scheduleRender(){ clearTimeout(rerenderTimer); rerenderTimer = setTimeout(()=>renderAll(), 60); }
 document.addEventListener('error', e=>{
@@ -943,6 +1004,8 @@ document.addEventListener('error', e=>{
   const src = el.getAttribute('src') || '';
   if(src) brokenSrc.add(src);
   if(el.id === 'imgModalPic') return;
+  /* ★追加 演出GIFの img はけっして入れかえない（つぎの回も使うため） */
+  if(el.id === 'gachaAnimGif'){ gachaGifBroken = true; el.style.display = 'none'; return; }
   if(el.classList.contains('lv-gallery-img')){
     if(src) lvImgCache[src] = false;
     const cell = el.closest('.lv-cell');
@@ -989,6 +1052,18 @@ function applyFreeze(){
     el.setAttribute('data-frozen','1');
     freezeSrc(src, out=>{ if(out && el.isConnected) el.src = out; });
   });
+}
+/* ★追加 いま表示されているコマでGIFを止める（最後のコマで停止させるため） */
+function freezeCurrentFrame(im){
+  if(!im) return;
+  try{
+    const w = im.naturalWidth || im.clientWidth || 480;
+    const h = im.naturalHeight || im.clientHeight || 270;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, w, h);
+    im.src = c.toDataURL('image/png');
+  }catch(e){ /* 止められなくても動作にえいきょうはありません */ }
 }
 
 function renderIcon(icon, cls, fb){
@@ -1334,6 +1409,7 @@ function applyLook(){
   applyCharacterBg();
   document.querySelectorAll('[data-icon]').forEach(el=>{
     if(el.tagName !== 'IMG') return;
+    if(el.id === 'gachaAnimGif') return;          /* ★ 演出GIFは自分で管理します */
     const v = ic[el.dataset.icon];
     if(v && !brokenSrc.has(v) && el.getAttribute('src') !== v) el.src = v;
   });
@@ -1644,11 +1720,69 @@ function renderShop(){
   }
   setText('gachaCostText', num(db.gacha.cost).toLocaleString());
   const gb = $('gachaBtn');
-  if(gb) gb.disabled = (db.player.money < db.gacha.cost) || db.gacha.pool.length===0;
+  /* ★追加 演出ちゅうはボタンをおせないようにする */
+  if(gb) gb.disabled = gachaBusy || (db.player.money < db.gacha.cost) || db.gacha.pool.length===0;
   renderGachaLineup();
 }
 
+/* ==========================================================
+   ★追加 ガチャの演出（gatyaGIF.gif）
+     1) 全画面でGIFを再生（毎回1コマ目から）
+     2) GACHA_ANIM.playMs で「そのときのコマ」で止める
+     3) GACHA_ANIM.holdMs（3秒）まってから結果モーダルへ
+     ※ 画面をタップすると、とばして結果にすすめます
+   ========================================================== */
+let gachaBusy = false;
+let gachaTimers = [];
+function clearGachaTimers(){ gachaTimers.forEach(clearTimeout); gachaTimers = []; }
+function gachaGifSrc(){
+  const v = fixAsset((db.icons && db.icons.gachaGif) || (A + 'gatyaGIF.gif'));
+  return isImagePath(v) ? v : '';
+}
+function hideGachaAnim(){
+  const ov = $('gachaAnim');
+  if(!ov) return;
+  ov.classList.remove('show');
+  ov.setAttribute('aria-hidden','true');
+  const im = $('gachaAnimGif');
+  if(im) im.removeAttribute('src');   /* GIFを止めて次回きれいに再生 */
+}
+let gachaAnimDone = null;             /* 演出のあとにやること（タップ時にも使う） */
+function finishGachaAnim(){
+  clearGachaTimers();
+  hideGachaAnim();
+  const fn = gachaAnimDone;
+  gachaAnimDone = null;
+  if(typeof fn === 'function') fn();
+}
+function playGachaAnim(done){
+  const ov = $('gachaAnim'), im = $('gachaAnimGif');
+  const src = gachaGifSrc();
+  gachaAnimDone = done;
+  /* GIFが用意されていないときは、演出なしでそのまま結果へ */
+  if(!ov || !im || !src || gachaGifBroken){
+    clearGachaTimers();
+    gachaTimers.push(setTimeout(finishGachaAnim, 300));
+    return;
+  }
+  clearGachaTimers();
+  im.style.display = '';
+  im.onerror = ()=>{ gachaGifBroken = true; finishGachaAnim(); };
+  /* うしろに時刻をつけて、毎回さいしょのコマから再生させる */
+  im.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now();
+  setText('gachaAnimCap','ガチャを回しています…');
+  ov.classList.add('show');
+  ov.setAttribute('aria-hidden','false');
+
+  gachaTimers.push(setTimeout(()=>{
+    freezeCurrentFrame(im);                   /* 再生おわり → その画面で止める */
+    setText('gachaAnimCap','なにが出るかな…？');
+    gachaTimers.push(setTimeout(finishGachaAnim, GACHA_ANIM.holdMs));   /* 3秒とまる */
+  }, GACHA_ANIM.playMs));
+}
+
 function pullGacha(){
+  if(gachaBusy) return;                                     /* 演出ちゅうは連打できません */
   if(db.gacha.pool.length===0){ toast('景品がありません'); return; }
   if(db.player.money < db.gacha.cost){ toast('お金が足りません！'); return; }
   db.player.money -= db.gacha.cost;
@@ -1663,7 +1797,15 @@ function pullGacha(){
   /* ★ 入手記録（ラインナップの ? をひらく） */
   if(!Array.isArray(db.gachaSeen)) db.gachaSeen = [];
   if(db.gachaSeen.indexOf(String(picked.id)) < 0) db.gachaSeen.push(String(picked.id));
-  saveDB(db); showGachaResult(picked); renderAll();
+  saveDB(db);
+
+  gachaBusy = true;
+  renderAll();                      /* お金の表示をすぐ反映（ボタンはおせません） */
+  playGachaAnim(()=>{               /* ★ GIF再生 →（3秒とまる）→ 結果発表 */
+    gachaBusy = false;
+    showGachaResult(picked);
+    renderAll();
+  });
 }
 
 const rarityColor = {N:'#7a7a7a', R:'#3a7bd5', SR:'#9b4fd6', SSR:'#e0a615'};
@@ -1713,9 +1855,13 @@ function renderGachaLineup(){
 
 $('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
 $('gachaBtn').onclick = pullGacha;
+/* ★追加 演出をタップでスキップ（結果にすすむ） */
+$('gachaAnim').onclick = ()=>{ if($('gachaAnim').classList.contains('show')) finishGachaAnim(); };
 $('imgModal').onclick = ()=>$('imgModal').classList.remove('show');
 document.addEventListener('keydown', e=>{
-  if(e.key === 'Escape') $('imgModal').classList.remove('show');
+  if(e.key !== 'Escape') return;
+  $('imgModal').classList.remove('show');
+  if($('gachaAnim').classList.contains('show')) finishGachaAnim();   /* ★追加 */
 });
 
 /* ==========================================================
