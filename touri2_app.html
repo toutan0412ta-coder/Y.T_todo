@@ -540,6 +540,7 @@ img.gacha-emoji{
   padding:7px 4px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center;
 }
 .lineup-cell.unknown{background:#d8cdb8; border-color:#6b5c46;}
+.lineup-cell.miss{opacity:.72; filter:grayscale(.55)}
 .lineup-icon{
   display:flex; align-items:center; justify-content:center;
   min-height:calc(var(--ic-shop)*var(--ic-scale)*1.6);
@@ -1959,14 +1960,52 @@ function pullGacha(){
 }
 
 const rarityColor = {N:'#7a7a7a', R:'#3a7bd5', SR:'#9b4fd6', SSR:'#e0a615'};
-function showGachaResult(item){
+function showGachaResult(item, miss){
   const ic = $('modalIcon'), ra = $('modalRarity');
-  if(ic) ic.innerHTML = renderIcon(item.icon,'s-modal','🎁');
-  if(ra){ ra.textContent = item.rarity; ra.style.color = rarityColor[item.rarity]||'#333'; }
-  setText('modalName', item.name);
+  if(ic) ic.innerHTML = miss ? renderIcon(item.icon,'s-modal','💨')
+                             : renderIcon(item.icon,'s-modal','🎁');
+  if(ra){
+    ra.textContent  = miss ? 'はずれ' : item.rarity;
+    ra.style.color  = miss ? '#7a7a7a' : (rarityColor[item.rarity]||'#333');
+  }
+  setText('modalName', miss ? 'はずれ… つぎはきっと出るよ！' : item.name);
+  const nt = $('modalNote');
+  if(nt) nt.textContent = miss ? 'アイテムはもらえませんでした' : '';
   const m = $('gachaModal'); if(m) m.classList.add('show');
 }
 
+function pullGacha(){
+  if(gachaBusy) return;
+  if(db.gacha.pool.length===0){ toast('景品がありません'); return; }
+  if(db.player.money < db.gacha.cost){ toast('お金が足りません！'); return; }
+  db.player.money -= db.gacha.cost;
+
+  const pool = db.gacha.pool;
+  const totalWeight = pool.reduce((s,p)=>s+num(p.weight),0) || 1;
+  let r = Math.random()*totalWeight;
+  let picked = pool[pool.length-1];
+  for(const p of pool){ if(r<num(p.weight)){ picked=p; break;} r -= num(p.weight); }
+
+  const miss = isMissPrize(picked);
+  /* ★ はずれのときは、もちものにも入手記録にも入れません */
+  if(!miss){
+    const existing = db.inventory.find(i=>i.refId==='gacha_'+picked.id);
+    if(existing){ existing.qty += 1; }
+    else{ db.inventory.push({id:'inv_g_'+picked.id+'_'+Date.now(), refId:'gacha_'+picked.id,
+      icon:picked.icon, name:picked.name, qty:1}); }
+    if(!Array.isArray(db.gachaSeen)) db.gachaSeen = [];
+    if(db.gachaSeen.indexOf(String(picked.id)) < 0) db.gachaSeen.push(String(picked.id));
+  }
+
+  saveDB(db);
+  gachaBusy = true;
+  renderAll();
+  playGachaAnim(()=>{                 /* 12秒再生 → 3秒停止 → 結果（変更なし） */
+    gachaBusy = false;
+    showGachaResult(picked, miss);
+    renderAll();
+  });
+}
 /* ==========================================================
    ★ ガチャのラインナップ
      ・1回でも当てた景品 … 本来のアイコンと名前
@@ -1983,25 +2022,29 @@ function isGachaSeen(id){
 function renderGachaLineup(){
   const wrap = $('gachaLineup');
   if(!wrap) return;
-  const pool = (db.gacha.pool || []).slice()
+  const all = (db.gacha.pool || []).slice()
     .sort((a,b)=> (num(a.ord,0)-num(b.ord,0)) || String(a.id).localeCompare(String(b.id)));
   const unknownIcon = db.icons.gachaUnknown || '❔';
-  const cells = pool.map(g=>{
-    const seen = isGachaSeen(g.id);
+  const cells = all.map(g=>{
+    const miss = isMissPrize(g);
+    const seen = miss || isGachaSeen(g.id);
     const icon = seen ? g.icon : unknownIcon;
-    const name = seen ? escapeHTML(g.name) : maskName(g.name);
-    const col  = rarityColor[g.rarity] || '#7a7a7a';
-    return `<div class="lineup-cell${seen ? '' : ' unknown'}" title="${seen ? escapeHTML(g.name) : 'まだ出ていない景品'}">
-        <div class="lineup-icon">${renderIcon(icon,'s-lineup', seen ? '🎁' : '❔')}</div>
+    const name = miss ? 'はずれ' : (seen ? escapeHTML(g.name) : maskName(g.name));
+    const col  = miss ? '#7a7a7a' : (rarityColor[g.rarity] || '#7a7a7a');
+    const cls  = miss ? ' miss' : (seen ? '' : ' unknown');
+    return `<div class="lineup-cell${cls}" title="${miss ? 'はずれ（アイテムはもらえません）' : (seen ? escapeHTML(g.name) : 'まだ出ていない景品')}">
+        <div class="lineup-icon">${renderIcon(icon,'s-lineup', miss ? '💨' : (seen ? '🎁' : '❔'))}</div>
         <div class="lineup-name">${name}</div>
-        <div class="lineup-rarity" style="color:${col}">${escapeHTML(g.rarity || 'N')}</div>
+        <div class="lineup-rarity" style="color:${col}">${miss ? 'はずれ' : escapeHTML(g.rarity || 'N')}</div>
       </div>`;
   }).join('');
-  const got = pool.filter(g=>isGachaSeen(g.id)).length;
+  const prizes = all.filter(g=>!isMissPrize(g));
+  const got = prizes.filter(g=>isGachaSeen(g.id)).length;
   wrap.innerHTML = '<div class="lineup-title">★ ラインナップ ★</div>'
     + `<div class="lineup-grid">${cells || '<div class="lineup-empty">景品がありません</div>'}</div>`
-    + (pool.length ? `<div class="lineup-note">あつめた ${got} / ${pool.length}　（❔＝まだ出ていない景品）<br>ラインナップはみんな共通です</div>` : '');
+    + (prizes.length ? `<div class="lineup-note">あつめた ${got} / ${prizes.length}　（❔＝まだ出ていない景品）<br>ラインナップはみんな共通です</div>` : '');
 }
+
 
 $('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
 $('gachaBtn').onclick = pullGacha;
@@ -2186,7 +2229,7 @@ renderAll();
     const ROOT = window.LQ_ROOT || 'lifequest';
     const NS = (!ROOT || ROOT==='lifequest') ? '' : (String(ROOT).replace(/[^A-Za-z0-9_-]/g,'')+'_');
     const PROFILES = NS+'profiles', KIDS = NS+'kids', SHARED = NS+'shared';
-    const CAT_DOC = 'catalog';
+    const CATALOG = NS+'catalog', CAT_DOC = 'main';
     const APP_ID = META.APP_ID;
     const DB_KEY = META.DB_KEY, REG_KEY = META.REG_KEY;
     const DB_PREFIX = 'lifequest_db_v1_';
@@ -2403,29 +2446,34 @@ renderAll();
     function catCount(c){ return Object.keys(c.shopItems).length + Object.keys(c.gacha.pool).length; }
     function catSame(a,b){ return canon(catOf(a)) === canon(catOf(b)); }
 
+    let warnedNoCat = false;
+    /* ★ お店・ガチャは catalog/main だけが親。こども画面は読むだけです */
     async function syncCatalog(){
       if(!fdb || catOff || catBusy) return;
-      if(sharedCat === undefined) return;                 /* まだ共通データを受信していない */
-      const me = mirror.kids[APP_ID];
-      if(!me) return;                                     /* 自分のデータがまだ無い */
-      const ref = doc(fdb, SHARED, CAT_DOC);
-      const mineCat = catOf(me);
-
-      /* ① 共通データがまだ無い → いちばん中身が多い子のぶんで作る */
-      if(sharedCat === null){
-        let best = mineCat, bestN = catCount(mineCat);
-        Object.keys(mirror.kids).forEach(id=>{
-          const c = catOf(mirror.kids[id]); const n = catCount(c);
-          if(n > bestN){ best = c; bestN = n; }
-        });
-        if(!bestN) return;
-        catBusy = true;
-        try{ await setDoc(ref, Object.assign({rev:Date.now()}, best)); }
-        catch(e){ console.error('共通カタログを作れませんでした', e); catOff = true; }
-        catBusy = false;
+      if(sharedCat === undefined) return;             /* まだ受信していない */
+      if(sharedCat === null){                          /* まだ作られていない */
+        if(!warnedNoCat){ warnedNoCat = true;
+          console.warn('catalog/main がまだありません。かんりしゃ画面を一度ひらいてください'); }
         return;
       }
-
+      const me = mirror.kids[APP_ID];
+      if(!me) return;
+      if(catSame(me, sharedCat)) return;               /* もう同じ */
+      catBusy = true;
+      const ups = {};
+      diff(catOf(me), catOf(sharedCat), '', ups);
+      if(Object.keys(ups).length){
+        try{
+          await updateDoc(doc(fdb, KIDS, APP_ID), ups);
+          const c = catOf(sharedCat);
+          if(mirror.kids[APP_ID]){
+            mirror.kids[APP_ID].shopItems = c.shopItems;
+            mirror.kids[APP_ID].gacha     = c.gacha;
+          }
+        }catch(e){ console.error('お店・ガチャを取りこめませんでした', e); }
+      }
+      catBusy = false;
+    }
       const rev = num(sharedCat.rev, 0);
 
       /* ② 中身が同じ → 目じるし（catalogRev）だけそろえる */
@@ -2508,8 +2556,8 @@ renderAll();
         if(!u) return;
         onSnapshot(collection(fdb, KIDS),     applyKidSnap,      err=>console.error(err));
         onSnapshot(collection(fdb, PROFILES), applyProfilesSnap, err=>console.error(err));
-        /* ★変更③ お店・ガチャの共通データ */
-        onSnapshot(doc(fdb, SHARED, CAT_DOC), applyCatalogSnap, err=>{
+        /* ★ お店・ガチャの共通データ（かんりしゃ画面が書く場所） */
+        onSnapshot(doc(fdb, CATALOG, CAT_DOC), applyCatalogSnap, err=>{
           console.error('共通カタログを読めません（Firestore ルールを確認してください）', err);
           catOff = true;
         });
