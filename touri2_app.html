@@ -20,6 +20,8 @@
   --ic-sm:16px; --ic-lg:22px; --ic-status:28px; --ic-money:34px;
   --ic-reward:14px; --ic-tile:58px; --ic-inv:26px; --ic-shop:30px;
   --ic-use:22px; --ic-nav:26px; --ic-gacha:110px;
+  /* ★追加：お店（商品購入）のアイコンの上限サイズ。512pxまで対応します */
+  --ic-shop-max:512px;
   --gap-status:20px;
   --nav-fit:contain;   /* contain＝画像全体を表示 / cover＝枠いっぱい（端が切れます） */
   --nav-pad:0px;       /* ★ フッター画像のまわりの余白：0＝余白なし */
@@ -88,8 +90,8 @@ img.ri{width:var(--s); height:var(--s);}
 span.ri-e{font-size:var(--s);}
 .s-tile{--s:calc(var(--ic-tile)*var(--ic-scale));}
 .s-inv{--s:calc(var(--ic-inv)*var(--ic-scale));}
-/* ★ お店の商品アイコンを大きく（1.9倍） */
-.s-shop{--s:calc(var(--ic-shop)*var(--ic-scale)*1.9);}
+/* ★ お店の商品アイコン（1.9倍・ただし最大 512px まで） */
+.s-shop{--s:min(calc(var(--ic-shop)*var(--ic-scale)*1.9), var(--ic-shop-max));}
 /* ★ ガチャのラインナップ用 */
 .s-lineup{--s:calc(var(--ic-shop)*var(--ic-scale)*1.6);}
 .s-use{--s:calc(var(--ic-use)*var(--ic-scale));}
@@ -103,8 +105,8 @@ span.ri-e{font-size:var(--s);}
 .status-card .icon-fb.lg{font-size:calc(var(--ic-status)*var(--ic-scale)*1.3);}
 
 .tile-reward .icon-fb{font-size:calc(var(--ic-reward)*var(--ic-scale));}
-/* ★ お店の商品アイコン（絵文字のとき）も大きく */
-.shop-item-icon .icon-fb{font-size:calc(var(--ic-shop)*var(--ic-scale)*1.9);}
+/* ★ お店の商品アイコン（絵文字のとき）も大きく（最大 512px まで） */
+.shop-item-icon .icon-fb{font-size:min(calc(var(--ic-shop)*var(--ic-scale)*1.9), var(--ic-shop-max));}
 span.gacha-emoji{
   display:flex; align-items:center; justify-content:center;
   font-size:calc(var(--ic-gacha)*var(--ic-scale)*.82);
@@ -445,15 +447,39 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
   padding:8px 10px; margin-bottom:8px;
 }
-/* ★ お店の商品アイコンの枠を大きく（1.9倍） */
+/* ★変更：お店の商品アイコンの枠（最大 512px まで対応） */
 .shop-item-icon{
-  width:calc(var(--ic-shop)*var(--ic-scale)*1.9); flex:none;
+  width:min(calc(var(--ic-shop)*var(--ic-scale)*1.9), var(--ic-shop-max));
+  max-width:100%; flex:none;
   display:flex; align-items:center; justify-content:center;
 }
 .shop-item-info{flex:1; min-width:0;}
 .shop-item-name{font-size:13px; font-weight:bold; color:var(--wood-darker);}
 .shop-item-desc{font-size:10.5px; color:#5c4028;}
 .shop-item-price{font-size:17px; color:var(--gold-dark); font-weight:bold; display:flex; align-items:center; gap:4px; margin:3px 0 6px;}
+
+/* ==========================================================
+   ★追加：大きい商品アイコン（〜512px）のときの見せ方
+     ・絵は「もとの大きさ（最大512px）」で表示します
+     ・画面よりも大きいときは、画面の横はばに合わせて縮みます
+     ・大きい絵のときは、その行を縦ならびにして絵を大きく見せます
+   ========================================================== */
+img.ri.s-shop.shop-icon-big{
+  width:auto; height:auto;
+  max-width:100%; max-height:var(--ic-shop-max);
+  object-fit:contain; image-rendering:auto;   /* 大きい絵はなめらかに表示 */
+  border-radius:8px; margin:0 auto;
+}
+.shop-item-row.has-big-icon{
+  flex-direction:column; align-items:center; text-align:center; gap:8px;
+}
+.shop-item-row.has-big-icon .shop-item-icon{width:100%; max-width:100%;}
+.shop-item-row.has-big-icon .shop-item-info{width:100%;}
+.shop-item-row.has-big-icon .shop-item-name{font-size:15px;}
+.shop-item-row.has-big-icon .shop-item-desc{font-size:11.5px;}
+.shop-item-row.has-big-icon .shop-item-price{justify-content:center; font-size:19px;}
+.shop-item-row.has-big-icon .buy-btn{width:100%; max-width:240px; font-size:14px; padding:9px 0;}
+
 .buy-btn{
   font-family:inherit; font-size:12px; font-weight:bold; letter-spacing:1px;
   color:#fff; white-space:nowrap; padding:7px 13px; flex:none;
@@ -582,7 +608,7 @@ img.gacha-emoji{
 /* ==========================================================
    ★ 追加：ガチャの演出（image/assets/gatyaGIF.gif）
       ガチャを回す → GIFを12秒だけ再生（ループなし・1回だけ）
-      → その画面で3秒とまる → 結果モーダル
+      → 結果モーダル
       ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます
    ========================================================== */
 .gacha-anim{
@@ -823,7 +849,7 @@ img.gacha-emoji{
 
 <div class="toast" id="toast"></div>
 
-<!-- ★ ガチャの演出（gatyaGIF.gif を12秒・1回だけ再生 → 3秒とまってから結果）
+<!-- ★ ガチャの演出（gatyaGIF.gif を12秒・1回だけ再生 → 結果）
      ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます -->
 <div class="gacha-anim" id="gachaAnim" aria-hidden="true">
   <img class="anim-pic" id="gachaAnimGif" src="" alt="ガチャ演出">
@@ -880,10 +906,19 @@ img.gacha-emoji{
       ・ガチャを回すと image/assets/gatyaGIF.gif を全画面で再生します
       ・★変更⑤ 再生は「12秒・1回だけ」。12秒たった時点でそのコマを
         静止画にさしかえて再生を打ち切るので、ループ（2周目）になりません。
-      ・そのあと3秒とまってから結果を出します
-        （長さは下の GACHA_ANIM で調整できます）
+      ・そのあと GACHA_ANIM.holdMs だけ待ってから結果を出します
+        （いまは 0 ＝ 待たずにすぐ結果を出します）
       ・★変更⑥ 演出は画面タップでは進みません。
         画面の下にでる「スキップ」ボタンをおしたときだけ結果にすすみます。
+   ▼ ★追加⑦ 商品購入（お店）のアイコンは 512px まで対応
+      ・商品の絵は「もとの大きさ」で表示します（上限 512px）
+      ・512px をこえる絵は 512px までにおさめます
+      ・画面よりも大きいときは、画面の横はばに合わせて縮めます
+      ・大きい絵（120pxより大きい）のときは、その商品の行を
+        縦ならびにして、絵・名前・購入ボタンが見やすいようにします
+      ・小さいアイコンは、これまでどおりの見た目のままです
+      ・上限を変えたいときは、下の SHOP_ICON_MAX と
+        CSSの --ic-shop-max を同じ数字にしてください
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -975,11 +1010,23 @@ const DEFAULT_ICON_SIZE = {
 };
 
 /* ==========================================================
+   ★追加⑦ 商品購入（お店）のアイコンの大きさ
+     SHOP_ICON_MAX   … 商品アイコンの上限（ピクセル）。ご指定の 512
+                       ※ CSS の --ic-shop-max と同じ数字にしてください
+     SHOP_ICON_STACK … これより大きいアイコンのときは、その行を
+                       縦ならびにして絵を大きく見せます
+   ========================================================== */
+const SHOP_ICON_MAX   = 512;
+const SHOP_ICON_STACK = 120;
+const shopIconNatural = {};   /* 画像のもとの大きさを覚えておく（ちらつき防止） */
+
+/* ==========================================================
    ★変更⑤ ガチャ演出のじかん（ミリ秒）
      playMs … gatyaGIF.gif を再生する長さ
                ＝ご指定の 12秒（12000）。この時間がすぎたら、そのときの
                  コマを静止画にして再生を打ち切ります（＝ループしません）
-     holdMs … 再生がおわってから結果を出すまでの停止時間（ご指定の3秒）
+     holdMs … 再生がおわってから結果を出すまでの停止時間
+               （0 ＝ 待たずにすぐ結果を出します）
      ※ GIF そのものが12秒より短いばあいも、12秒の時点で必ず止まります。
         ぴったり1回だけ見せたいときは、GIFの長さ＝12秒にしてください。
    ========================================================== */
@@ -1127,6 +1174,52 @@ function miniIcon(src, fb, cls, freeze){
     return `<img class="${c}" src="${escapeHTML(src)}" data-fb="${fb}" alt="">`;
   }
   return `<span class="${c} icon-fb">${fb}</span>`;
+}
+
+/* ==========================================================
+   ★追加⑦ お店（商品購入）のアイコンを 512px まで表示する
+     ・shopIconBase()      … ふだんのアイコンの大きさ（CSSの設定から計算）
+     ・applyShopIconSize() … 画像のもとの大きさに合わせて表示サイズを決める
+     ・fitShopIcon()       … 商品1行ぶんの画像を調べて上の処理をよぶ
+   ========================================================== */
+function shopIconBase(){
+  const cs = getComputedStyle(document.documentElement);
+  const base  = parseFloat(cs.getPropertyValue('--ic-shop'))  || 30;
+  const scale = parseFloat(cs.getPropertyValue('--ic-scale')) || 1;
+  return Math.min(SHOP_ICON_MAX, base * scale * 1.9);
+}
+function applyShopIconSize(img, row, w, h){
+  if(!img || !row || !w || !h) return;
+  const base = shopIconBase();
+  const long = Math.max(w, h);
+  if(long <= base){                       /* 小さい絵：これまでどおりの見た目 */
+    img.classList.remove('shop-icon-big');
+    img.style.width = '';
+    row.classList.remove('has-big-icon');
+    return;
+  }
+  const size = Math.min(SHOP_ICON_MAX, long);   /* ★ 512px をこえないようにする */
+  img.classList.add('shop-icon-big');
+  img.style.width = size + 'px';               /* よこはば。たては自動（比率そのまま） */
+  row.classList.toggle('has-big-icon', size > SHOP_ICON_STACK);
+}
+function fitShopIcon(row){
+  if(!row) return;
+  const img = row.querySelector('.shop-item-icon img.ri');
+  if(!img) return;                            /* 絵文字のときは何もしません */
+  const src = img.getAttribute('src') || '';
+  const known = shopIconNatural[src];
+  if(known) applyShopIconSize(img, row, known.w, known.h);   /* 前に調べた大きさをすぐ反映 */
+  if(img.complete && img.naturalWidth){
+    shopIconNatural[src] = {w:img.naturalWidth, h:img.naturalHeight};
+    applyShopIconSize(img, row, img.naturalWidth, img.naturalHeight);
+    return;
+  }
+  img.addEventListener('load', ()=>{
+    if(!img.naturalWidth) return;
+    shopIconNatural[src] = {w:img.naturalWidth, h:img.naturalHeight};
+    applyShopIconSize(img, row, img.naturalWidth, img.naturalHeight);
+  }, {once:true});
 }
 
 /* ==========================================================
@@ -1447,6 +1540,8 @@ function applyLook(){
   Object.keys(DEFAULT_ICON_SIZE).forEach(k=>{
     r.setProperty('--ic-'+k, num(sz[k], DEFAULT_ICON_SIZE[k]) + 'px');
   });
+  /* ★追加⑦ 商品アイコンの上限（512px）もCSSへ渡す */
+  r.setProperty('--ic-shop-max', SHOP_ICON_MAX + 'px');
   r.setProperty('--bg-room', (ic.bgRoom && !brokenSrc.has(ic.bgRoom)) ? `url("${ic.bgRoom}")` : 'none');
   applyCharacterBg();
   document.querySelectorAll('[data-icon]').forEach(el=>{
@@ -1758,6 +1853,8 @@ function renderShop(){
         saveDB(db); toast(`「${item.name}」を購入しました！`); renderAll();
       };
       list.appendChild(row);
+      /* ★追加⑦ 商品アイコンを「もとの大きさ（最大512px）」で表示する */
+      fitShopIcon(row);
     });
   }
   setText('gachaCostText', num(db.gacha.cost).toLocaleString());
@@ -1772,7 +1869,7 @@ function renderShop(){
      1) 全画面でGIFを再生（毎回1コマ目から）
      2) GACHA_ANIM.playMs（12秒）たったら、そのコマを静止画にして
         再生を打ち切る＝ループしません（1回だけの表示）
-     3) GACHA_ANIM.holdMs（3秒）まってから結果モーダルへ
+     3) GACHA_ANIM.holdMs（いまは0）まってから結果モーダルへ
      ※ とばしたいときは、画面の下にでる「スキップ」ボタンだけで進みます。
         画面のほかの場所をタップしても、なにも起きません。
    ========================================================== */
@@ -1830,7 +1927,7 @@ function playGachaAnim(done){
   gachaTimers.push(setTimeout(()=>{
     freezeCurrentFrame(im);                   /* ★12秒で再生を打ち切って静止（ループしない） */
     setText('gachaAnimCap','なにが出るかな…？');
-    gachaTimers.push(setTimeout(finishGachaAnim, GACHA_ANIM.holdMs));   /* 3秒とまる */
+    gachaTimers.push(setTimeout(finishGachaAnim, GACHA_ANIM.holdMs));   /* 待ち時間（いまは0） */
   }, GACHA_ANIM.playMs));
 }
 
@@ -1854,7 +1951,7 @@ function pullGacha(){
 
   gachaBusy = true;
   renderAll();                      /* お金の表示をすぐ反映（ボタンはおせません） */
-  playGachaAnim(()=>{               /* ★ GIFを12秒1回だけ再生 →（3秒とまる）→ 結果発表 */
+  playGachaAnim(()=>{               /* ★ GIFを12秒1回だけ再生 → 結果発表 */
     gachaBusy = false;
     showGachaResult(picked);
     renderAll();
