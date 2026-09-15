@@ -581,16 +581,18 @@ img.gacha-emoji{
 
 /* ==========================================================
    ★ 追加：ガチャの演出（image/assets/gatyaGIF.gif）
-      ガチャを回す → GIFを再生 → 3秒とまる → 結果モーダル
+      ガチャを回す → GIFを12秒だけ再生（ループなし・1回だけ）
+      → その画面で3秒とまる → 結果モーダル
+      ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます
    ========================================================== */
 .gacha-anim{
   position:fixed; inset:0; z-index:150; padding:16px;
   display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
-  background:rgba(8,5,2,.94); cursor:pointer;
+  background:rgba(8,5,2,.94); cursor:default;   /* ★変更 タップでスキップしない */
 }
 .gacha-anim.show{display:flex;}
 .gacha-anim .anim-pic{
-  width:100%; max-width:min(94vw,760px); max-height:66vh;
+  width:100%; max-width:min(94vw,760px); max-height:60vh;
   object-fit:contain; display:block; background:#000;
   border:4px solid var(--gold); border-radius:14px;
   box-shadow:0 0 30px rgba(255,190,60,.35);
@@ -599,7 +601,25 @@ img.gacha-emoji{
   color:#ffe9a8; font-size:17px; font-weight:bold; text-align:center;
   text-shadow:2px 2px 0 rgba(0,0,0,.6); line-height:1.5;
 }
-.gacha-anim .anim-hint{color:#cbb98f; font-size:11.5px; text-align:center;}
+.gacha-anim .anim-hint{color:#cbb98f; font-size:11.5px; text-align:center; line-height:1.5;}
+/* ★追加：スキップボタン（演出中だけ、画面の下に出ます） */
+.gacha-anim .anim-skip{
+  font-family:inherit; font-size:16px; font-weight:bold; letter-spacing:2px;
+  color:#fff8dc; padding:12px 30px; margin-top:2px;
+  background:var(--purple); border:3px solid #2b1a42; border-radius:0;
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.28), inset 0 -4px 0 rgba(0,0,0,.22), 0 5px 0 #2b1a42;
+  text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  cursor:pointer; image-rendering:pixelated; transition:none;
+}
+.gacha-anim .anim-skip:active{
+  transform:translateY(5px);
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.18), inset 0 -4px 0 rgba(0,0,0,.26);
+}
+.gacha-anim .anim-skip:focus-visible{outline:3px solid var(--gold); outline-offset:3px;}
+.gacha-anim .anim-skip:disabled{
+  background:#6b6b6b; border-color:#4a4a4a; color:#dcdcdc; cursor:default; transform:none;
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.16), inset 0 -4px 0 rgba(0,0,0,.20), 0 5px 0 #4a4a4a;
+}
 
 /* ===== レベルコレクション ===== */
 .gallery-wrap{
@@ -662,7 +682,10 @@ img.gacha-emoji{
   .status-card .exp-text{font-size:14px;}
   .avatar-stage{aspect-ratio:2/1; height:auto;}
   .msg-body{max-height:88px; font-size:13px;}
+  .gacha-anim{gap:10px;}
+  .gacha-anim .anim-pic{max-height:52vh;}
   .gacha-anim .anim-cap{font-size:14.5px;}
+  .gacha-anim .anim-skip{font-size:14.5px; padding:11px 24px;}
 }
 /* スマホ：アプリ枠をやめて全画面表示（ページの上下スクロールも停止） */
 @media (max-width:767px){
@@ -679,7 +702,9 @@ img.gacha-emoji{
   body{padding:6px; align-items:stretch;}
   .app{height:calc(100dvh - 12px);}
   .avatar-stage{aspect-ratio:2/1; height:auto;}
-  .gacha-anim .anim-pic{max-height:58vh;}
+  .gacha-anim{gap:8px;}
+  .gacha-anim .anim-pic{max-height:48vh;}
+  .gacha-anim .anim-skip{font-size:14px; padding:9px 22px;}
 }
 @media (prefers-reduced-motion: reduce){
   .done-spark, .done-spark::before, .done-spark i,
@@ -798,11 +823,13 @@ img.gacha-emoji{
 
 <div class="toast" id="toast"></div>
 
-<!-- ★ 追加：ガチャの演出（gatyaGIF.gif を再生 → 3秒とまってから結果） -->
+<!-- ★ ガチャの演出（gatyaGIF.gif を12秒・1回だけ再生 → 3秒とまってから結果）
+     ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます -->
 <div class="gacha-anim" id="gachaAnim" aria-hidden="true">
   <img class="anim-pic" id="gachaAnimGif" src="" alt="ガチャ演出">
   <div class="anim-cap" id="gachaAnimCap">ガチャを回しています…</div>
-  <div class="anim-hint">画面をタップすると結果にすすみます</div>
+  <div class="anim-hint">さいごまで見てね<br>いそぐときは下の「スキップ」をおしてね</div>
+  <button class="anim-skip" id="gachaSkipBtn" type="button">スキップ ▶</button>
 </div>
 
 <div class="modal-back" id="gachaModal">
@@ -850,9 +877,13 @@ img.gacha-emoji{
       どこか1つで内容が変わると、ほかのファイルにも自動でそろいます。
    ▼ ★追加④ ガチャの見た目と演出
       ・ガチャ画面に image/assets/scene_gachamachine.png を大きく表示
-      ・ガチャを回すと image/assets/gatyaGIF.gif を全画面で再生し、
-        再生がおわったところで止めて3秒まってから結果を出します
+      ・ガチャを回すと image/assets/gatyaGIF.gif を全画面で再生します
+      ・★変更⑤ 再生は「12秒・1回だけ」。12秒たった時点でそのコマを
+        静止画にさしかえて再生を打ち切るので、ループ（2周目）になりません。
+      ・そのあと3秒とまってから結果を出します
         （長さは下の GACHA_ANIM で調整できます）
+      ・★変更⑥ 演出は画面タップでは進みません。
+        画面の下にでる「スキップ」ボタンをおしたときだけ結果にすすみます。
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -944,11 +975,15 @@ const DEFAULT_ICON_SIZE = {
 };
 
 /* ==========================================================
-   ★追加 ガチャ演出のじかん（ミリ秒）
-     playMs … gatyaGIF.gif を再生する長さ（GIF 1周ぶんに合わせてください）
+   ★変更⑤ ガチャ演出のじかん（ミリ秒）
+     playMs … gatyaGIF.gif を再生する長さ
+               ＝ご指定の 12秒（12000）。この時間がすぎたら、そのときの
+                 コマを静止画にして再生を打ち切ります（＝ループしません）
      holdMs … 再生がおわってから結果を出すまでの停止時間（ご指定の3秒）
+     ※ GIF そのものが12秒より短いばあいも、12秒の時点で必ず止まります。
+        ぴったり1回だけ見せたいときは、GIFの長さ＝12秒にしてください。
    ========================================================== */
-const GACHA_ANIM = { playMs:3000, holdMs:3000 };
+const GACHA_ANIM = { playMs:12000, holdMs:3000 };
 
 const KIND_META = {
   daily  :{label:'日々', title:'☀ 日々のタイル', note:'毎日24時に達成だけリセット'},
@@ -1053,9 +1088,11 @@ function applyFreeze(){
     freezeSrc(src, out=>{ if(out && el.isConnected) el.src = out; });
   });
 }
-/* ★追加 いま表示されているコマでGIFを止める（最後のコマで停止させるため） */
+/* ★追加 いま表示されているコマでGIFを止める（12秒たったところで停止させるため）
+   canvas に写した静止画（PNG）に src を入れかえるので、GIFの再生が終わります
+   ＝ ループ（2周目）になりません */
 function freezeCurrentFrame(im){
-  if(!im) return;
+  if(!im) return false;
   try{
     const w = im.naturalWidth || im.clientWidth || 480;
     const h = im.naturalHeight || im.clientHeight || 270;
@@ -1063,7 +1100,12 @@ function freezeCurrentFrame(im){
     c.width = w; c.height = h;
     c.getContext('2d').drawImage(im, 0, 0, w, h);
     im.src = c.toDataURL('image/png');
-  }catch(e){ /* 止められなくても動作にえいきょうはありません */ }
+    return true;
+  }catch(e){
+    /* 止められなかったときも、GIFの読みこみを切って再生を終わらせます */
+    try{ im.removeAttribute('src'); }catch(e2){}
+    return false;
+  }
 }
 
 function renderIcon(icon, cls, fb){
@@ -1726,11 +1768,13 @@ function renderShop(){
 }
 
 /* ==========================================================
-   ★追加 ガチャの演出（gatyaGIF.gif）
+   ★変更⑤⑥ ガチャの演出（gatyaGIF.gif）
      1) 全画面でGIFを再生（毎回1コマ目から）
-     2) GACHA_ANIM.playMs で「そのときのコマ」で止める
+     2) GACHA_ANIM.playMs（12秒）たったら、そのコマを静止画にして
+        再生を打ち切る＝ループしません（1回だけの表示）
      3) GACHA_ANIM.holdMs（3秒）まってから結果モーダルへ
-     ※ 画面をタップすると、とばして結果にすすめます
+     ※ とばしたいときは、画面の下にでる「スキップ」ボタンだけで進みます。
+        画面のほかの場所をタップしても、なにも起きません。
    ========================================================== */
 let gachaBusy = false;
 let gachaTimers = [];
@@ -1739,15 +1783,22 @@ function gachaGifSrc(){
   const v = fixAsset((db.icons && db.icons.gachaGif) || (A + 'gatyaGIF.gif'));
   return isImagePath(v) ? v : '';
 }
+function setSkipVisible(on){
+  const sk = $('gachaSkipBtn');
+  if(!sk) return;
+  sk.disabled = !on;
+  sk.style.display = on ? '' : 'none';
+}
 function hideGachaAnim(){
   const ov = $('gachaAnim');
+  setSkipVisible(false);
   if(!ov) return;
   ov.classList.remove('show');
   ov.setAttribute('aria-hidden','true');
   const im = $('gachaAnimGif');
   if(im) im.removeAttribute('src');   /* GIFを止めて次回きれいに再生 */
 }
-let gachaAnimDone = null;             /* 演出のあとにやること（タップ時にも使う） */
+let gachaAnimDone = null;             /* 演出のあとにやること（スキップ時にも使う） */
 function finishGachaAnim(){
   clearGachaTimers();
   hideGachaAnim();
@@ -1762,6 +1813,7 @@ function playGachaAnim(done){
   /* GIFが用意されていないときは、演出なしでそのまま結果へ */
   if(!ov || !im || !src || gachaGifBroken){
     clearGachaTimers();
+    setSkipVisible(false);
     gachaTimers.push(setTimeout(finishGachaAnim, 300));
     return;
   }
@@ -1773,9 +1825,10 @@ function playGachaAnim(done){
   setText('gachaAnimCap','ガチャを回しています…');
   ov.classList.add('show');
   ov.setAttribute('aria-hidden','false');
+  setSkipVisible(true);               /* ★変更⑥ 再生中はスキップボタンを出す */
 
   gachaTimers.push(setTimeout(()=>{
-    freezeCurrentFrame(im);                   /* 再生おわり → その画面で止める */
+    freezeCurrentFrame(im);                   /* ★12秒で再生を打ち切って静止（ループしない） */
     setText('gachaAnimCap','なにが出るかな…？');
     gachaTimers.push(setTimeout(finishGachaAnim, GACHA_ANIM.holdMs));   /* 3秒とまる */
   }, GACHA_ANIM.playMs));
@@ -1801,7 +1854,7 @@ function pullGacha(){
 
   gachaBusy = true;
   renderAll();                      /* お金の表示をすぐ反映（ボタンはおせません） */
-  playGachaAnim(()=>{               /* ★ GIF再生 →（3秒とまる）→ 結果発表 */
+  playGachaAnim(()=>{               /* ★ GIFを12秒1回だけ再生 →（3秒とまる）→ 結果発表 */
     gachaBusy = false;
     showGachaResult(picked);
     renderAll();
@@ -1855,13 +1908,25 @@ function renderGachaLineup(){
 
 $('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
 $('gachaBtn').onclick = pullGacha;
-/* ★追加 演出をタップでスキップ（結果にすすむ） */
-$('gachaAnim').onclick = ()=>{ if($('gachaAnim').classList.contains('show')) finishGachaAnim(); };
+/* ★変更⑥ スキップは「下のスキップボタン」だけ。
+   演出画面のほかの場所をタップしても、けっして進みません */
+setSkipVisible(false);
+(function bindGachaSkip(){
+  const sk = $('gachaSkipBtn');
+  if(!sk) return;
+  const doSkip = e=>{
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    const ov = $('gachaAnim');
+    if(ov && ov.classList.contains('show')) finishGachaAnim();
+  };
+  sk.onclick = doSkip;
+  sk.onkeydown = e=>{ if(e.key==='Enter' || e.key===' ') doSkip(e); };
+})();
 $('imgModal').onclick = ()=>$('imgModal').classList.remove('show');
 document.addEventListener('keydown', e=>{
   if(e.key !== 'Escape') return;
   $('imgModal').classList.remove('show');
-  if($('gachaAnim').classList.contains('show')) finishGachaAnim();   /* ★追加 */
+  /* ★変更⑥ ガチャ演出は Esc でもスキップしません（スキップボタンのみ） */
 });
 
 /* ==========================================================
