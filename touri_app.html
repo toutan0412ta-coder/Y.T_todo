@@ -235,6 +235,13 @@ span.gacha-emoji{
   background:var(--gold-dark); padding:7px 14px; border-radius:9px; white-space:nowrap;
   box-shadow:0 2px 5px rgba(0,0,0,.55); border:2px solid #7a520d; line-height:1.1;
 }
+/* ★変更：前の日から持ちこした申請中は「申請中（きのう）」と分かるように小さく表示 */
+.tile-pend-day{
+  position:absolute; left:6px; right:6px; bottom:30px; z-index:8;
+  text-align:center; font-size:10.5px; font-weight:bold; color:#fff8dc;
+  background:rgba(28,20,10,.72); border-radius:7px; padding:2px 4px;
+  text-shadow:1px 1px 0 rgba(0,0,0,.6); pointer-events:none;
+}
 .tile.has-card{padding:0; background:#2b2015;}
 .tile.has-card .tile-card-img{
   position:absolute; inset:0; width:100%; height:100%;
@@ -433,6 +440,11 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 .shop-panel{display:none;}
 .shop-panel.active{display:block;}
 .shop-section-title{color:var(--gold); font-size:13px; margin:4px 0 8px; padding-left:2px;}
+/* ★変更：お店とガチャは全員共通、という案内 */
+.shared-note{
+  color:#d6c6ee; font-size:10.5px; text-align:center;
+  margin:0 0 8px; line-height:1.5;
+}
 .shop-item-row{
   display:flex; align-items:center; gap:10px;
   background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
@@ -718,6 +730,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       </div>
       <div class="shop-panel active" id="panel-buy">
         <div class="shop-section-title">✦ おすすめ商品</div>
+        <div class="shared-note">※ 商品のならびは、みんなの画面で共通です</div>
         <div id="shopList"></div>
       </div>
       <div class="shop-panel" id="panel-gacha">
@@ -774,12 +787,21 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       日々タイル・通常タイル・特別タイル
         … すべて子ごとに独立（内容・画像・進捗ぜんぶ別）
           かんりしゃ画面で、その子のぶんを個別に登録・編集します
-      日々タイルは毎日24時にリセット、通常・特別は達成すると翌日に消えます
-   ▼ ガチャのラインナップ（★今回の追加）
+      ★変更① 日々タイルは「毎日24時に達成だけリセット」。
+              タイルの中身（名前・画像・ごほうび等）は書きかえないので、
+              かんりしゃ画面で編集した内容は翌日以降もそのまま残ります。
+      ★変更② 申請中（承認まち）は日付が変わっても消えません。
+              前の日に申請したタイルも、あとからしょうにんできます。
+   ▼ ガチャのラインナップ
       ガチャの下に景品一覧を表示します
         ・1回でも当てた景品 … 本来のアイコンと名前
         ・まだ当てていない景品 … 未取得用アイコン＋名前の文字数ぶんの「?」
       当てた記録は gachaSeen に入り、Firestore に同期されます
+   ▼ ★変更③ お店・ガチャは「みんな共通」
+      Firestore の shared/catalog に商品とガチャをまとめて置き、
+      どのファイル（yuika_app / touri_app / user3_app …）でも
+      同じ商品名・同じガチャ内容が表示されます。
+      どこか1つで内容が変わると、ほかのファイルにも自動でそろいます。
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -869,7 +891,7 @@ const DEFAULT_ICON_SIZE = {
 };
 
 const KIND_META = {
-  daily  :{label:'日々', title:'☀ 日々のタイル', note:'毎日24時にリセット'},
+  daily  :{label:'日々', title:'☀ 日々のタイル', note:'毎日24時に達成だけリセット'},
   normal :{label:'通常', title:'◆ 通常タイル',   note:'達成すると翌日に消えます'},
   special:{label:'特別', title:'★ 特別タイル',   note:'達成すると翌日に消えます'}
 };
@@ -1029,12 +1051,26 @@ function syncSharedTiles(d){
   return false;
 }
 
+/* ==========================================================
+   ★変更①② 日付がかわったときの処理
+     ・日々タイル … 「達成」だけリセット。中身（名前・画像・ごほうび）は
+                    いっさい書きかえないので、編集した内容は翌日以降も残ります。
+     ・申請中（承認まち）… 日付が変わっても消しません。
+                    前の日の申請も、かんりしゃがあとからしょうにんできます。
+     ・通常・特別 … 達成ずみのものだけ翌日に消えます（申請中は残す）。
+   ========================================================== */
 function applyDayRollover(d){
   const today = new Date().toDateString();
   if(d.lastResetDate === today) return false;
   d.tiles.forEach(t=>{
-    if(t.kind === 'daily'){ t.completed = false; t.pending = false; }
-    else if(t.completed){ t.archived = true; }
+    if(t.kind === 'daily'){
+      t.completed = false;              /* 達成のみリセット */
+      /* t.pending はそのまま（申請中を持ちこす） */
+    }else if(t.completed && !t.pending){
+      t.archived = true;                /* 達成ずみの通常・特別は翌日に消える */
+    }
+    /* 申請中のタイルは archived にしない（＝しょうにんできる状態を保つ） */
+    if(t.pending) t.archived = false;
   });
   d.lastResetDate = today;
   return true;
@@ -1096,6 +1132,9 @@ function loadDB(){
     if(typeof t.archived !== 'boolean'){ t.archived = false; dirty = true; }
     if(typeof t.completed !== 'boolean'){ t.completed = false; dirty = true; }
     if(typeof t.pending !== 'boolean'){ t.pending = false; dirty = true; }
+    /* ★変更② 申請した時刻（かんりしゃ画面で「いつの申請か」を出すため） */
+    if(t.pending && !num(t.pendingAt,0)){ t.pendingAt = Date.now(); dirty = true; }
+    if(!t.pending && num(t.pendingAt,0)){ t.pendingAt = 0; dirty = true; }
     t.rewardExp   = Math.max(0, num(t.rewardExp,0));
     t.rewardMoney = Math.max(0, num(t.rewardMoney,0));
     const c = fixTile(t.cardImage || '');
@@ -1180,6 +1219,18 @@ function todayLabel(){
   const d = new Date();
   const w = ['日','月','火','水','木','金','土'][d.getDay()];
   return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${w}）`;
+}
+/* ★変更② 申請が「いつのものか」を短く表す（きょう / きのう / M/D） */
+function whenLabel(ts){
+  const t = num(ts,0);
+  if(!t) return '';
+  const a = new Date(t), b = new Date();
+  const d0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const d1 = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  const diffDay = Math.round((d1 - d0) / 86400000);
+  if(diffDay <= 0) return '';
+  if(diffDay === 1) return 'きのう';
+  return `${a.getMonth()+1}/${a.getDate()}`;
 }
 function toast(msg){
   const el = $('toast');
@@ -1310,10 +1361,13 @@ function renderTop(){
 function requestTile(t){
   if(t.completed){ toast('もう達成ずみ！'); return; }
   if(t.pending){
-    t.pending = false; saveDB(db);
+    t.pending = false; t.pendingAt = 0; saveDB(db);
     toast(`「${t.label}」の申請をキャンセルしました`); renderAll(); return;
   }
-  t.pending = true; saveDB(db);
+  t.pending = true;
+  t.pendingAt = Date.now();      /* ★変更② 申請した時刻をのこす（日付が変わっても承認OK） */
+  t.archived = false;
+  saveDB(db);
   toast(`「${t.label}」を申請しました！かんりしゃの承認を待とう`); renderAll();
 }
 
@@ -1331,20 +1385,23 @@ function buildTile(t){
       <span>${miniIcon(iStar(),'⭐','',true)}${t.rewardExp}</span>
       <span>${miniIcon(iCoin(),'🪙','',true)}${t.rewardMoney}</span>
     </div>`;
+  /* ★変更② 前の日から持ちこした申請中は、いつの申請か出す */
+  const when = (!t.completed && t.pending) ? whenLabel(t.pendingAt) : '';
+  const pendDay = when ? `<div class="tile-pend-day">${escapeHTML(when)}の申請</div>` : '';
   const sparkHTML = (t.kind==='special')
     ? '<div class="sp-surface"></div><div class="sp-stars"><i></i><i></i><i></i><i></i><i></i></div>' : '';
   const doneSpark = t.completed
     ? '<span class="done-spark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' : '';
   if(useCard){
     div.innerHTML = `<img class="tile-card-img" src="${escapeHTML(t.cardImage)}" alt="${escapeHTML(t.label)}">`
-      + doneSpark + sparkHTML + rewardHTML
+      + doneSpark + sparkHTML + rewardHTML + pendDay
       + `<div class="tile-name-bar">${escapeHTML(t.label)}</div>`;
   }else{
-    div.innerHTML = doneSpark + sparkHTML + rewardHTML
+    div.innerHTML = doneSpark + sparkHTML + rewardHTML + pendDay
       + `<div class="tile-icon">${renderIcon(t.icon,'s-tile','🧩')}</div>`
       + `<div class="tile-label">${escapeHTML(t.label)}</div>`;
   }
-  div.title = t.label;
+  div.title = t.label + (when ? `（${when}の申請・承認まち）` : '');
   div.onclick = ()=>requestTile(t);
   div.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); requestTile(t); } };
   return div;
@@ -1355,7 +1412,8 @@ function renderTiles(){
   if(!wrap) return;
   wrap.innerHTML = '';
   KIND_ORDER.forEach(kind=>{
-    const list = db.tiles.filter(t=>t.kind===kind && !t.archived)
+    /* ★変更② 申請中のタイルは archived でも表示する（承認まちを消さない） */
+    const list = db.tiles.filter(t=>t.kind===kind && (!t.archived || (t.pending && !t.completed)))
       .sort((a,b)=> (num(a.ord,0)-num(b.ord,0)) || String(a.id).localeCompare(String(b.id)));
     const meta = KIND_META[kind];
     const h = document.createElement('div');
@@ -1554,10 +1612,13 @@ function renderShop(){
   const list = $('shopList');
   if(list){
     list.innerHTML = '';
-    if(db.shopItems.length===0){
+    /* ★変更③ 商品はみんな共通（shared/catalog）。ならび順もそろえる */
+    const items = (db.shopItems || []).slice()
+      .sort((a,b)=> (num(a.ord,0)-num(b.ord,0)) || String(a.id).localeCompare(String(b.id)));
+    if(items.length===0){
       list.innerHTML = '<div class="sec-empty">商品がありません</div>';
     }
-    db.shopItems.forEach(item=>{
+    items.forEach(item=>{
       const row = document.createElement('div');
       row.className = 'shop-item-row';
       row.innerHTML = `
@@ -1618,6 +1679,7 @@ function showGachaResult(item){
    ★ ガチャのラインナップ
      ・1回でも当てた景品 … 本来のアイコンと名前
      ・まだ当てていない景品 … 未取得用アイコン＋名前の文字数ぶんの「?」
+     ・景品の中身はみんな共通（shared/catalog）
    ========================================================== */
 function maskName(name){
   const n = String(name || '').replace(/\s+/g,'');
@@ -1646,7 +1708,7 @@ function renderGachaLineup(){
   const got = pool.filter(g=>isGachaSeen(g.id)).length;
   wrap.innerHTML = '<div class="lineup-title">★ ラインナップ ★</div>'
     + `<div class="lineup-grid">${cells || '<div class="lineup-empty">景品がありません</div>'}</div>`
-    + (pool.length ? `<div class="lineup-note">あつめた ${got} / ${pool.length}　（❔＝まだ出ていない景品）</div>` : '');
+    + (pool.length ? `<div class="lineup-note">あつめた ${got} / ${pool.length}　（❔＝まだ出ていない景品）<br>ラインナップはみんな共通です</div>` : '');
 }
 
 $('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
@@ -1794,13 +1856,14 @@ renderAll();
   /* ============================================================
      Firebase  Cloud Firestore 同期ブリッジ（かんりしゃ画面と即時同期）
     ・この画面のデータは Firestore に保存・購読されます
-       kids/{ID}     … こどものデータ全部（全員ぶんを購読して受け渡しにも使う）
-       profiles      … こども名簿（読み取りのみ・管理はかんりしゃ画面）
+       kids/{ID}       … こどものデータ全部（全員ぶんを購読して受け渡しにも使う）
+       profiles        … こども名簿（読み取りのみ・管理はかんりしゃ画面）
+       shared/catalog  … ★変更③ お店の商品とガチャの中身（全ファイル共通）
     ・★ タイルは子ごとに独立させたので shared/tiles は購読も書き込みもしません
-    ・★ ガチャの入手記録（gachaSeen）も同期します
+    ・★ ガチャの入手記録（gachaSeen）は子ごとに同期します
+    ・★変更① かんりしゃ画面が付けた「知らないフィールド」も消さずにそのまま残します
+       （タイルの編集内容が翌日以降もきえないようにするためです）
     ・ローカルのブラウザ内保存は使わず、Firestore だけがデータの置き場所です
-    ・Firestore と画面の間は同じデータ形（JSON 文字列）を行き来させて、
-       上のクラシックスクリプトのロジックをそのまま動かします（キャッシュはメモリ内のみ）
      ============================================================ */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged }
@@ -1814,12 +1877,21 @@ renderAll();
   if(META && CFG && CFG.projectId){
     const ROOT = window.LQ_ROOT || 'lifequest';
     const NS = (!ROOT || ROOT==='lifequest') ? '' : (String(ROOT).replace(/[^A-Za-z0-9_-]/g,'')+'_');
-    const PROFILES = NS+'profiles', KIDS = NS+'kids';
+    const PROFILES = NS+'profiles', KIDS = NS+'kids', SHARED = NS+'shared';
+    const CAT_DOC = 'catalog';
     const APP_ID = META.APP_ID;
     const DB_KEY = META.DB_KEY, REG_KEY = META.REG_KEY;
     const DB_PREFIX = 'lifequest_db_v1_';
 
     let fdb = null, ready = false, readyCalled = false, warnedNoData = false;
+
+    /* ★変更③ 共通カタログ（お店・ガチャ）の状態
+         undefined … まだ受信していない
+         null      … まだ作られていない
+         {…}       … サーバーの内容 */
+    let sharedCat = undefined, catBusy = false, catOff = false;
+    /* こども画面が自分の判断で書きかえてはいけない場所（共通カタログ） */
+    const CATALOG_PATH = /^(shopItems|gacha|catalogRev)(\.|$)/;
 
     /* サーバー側の最新（Firestore のマップ形式）をキープして差分書き込みに使う */
     const mirror = { kids:Object.create(null) };
@@ -1830,6 +1902,23 @@ renderAll();
       return Object.keys(o).filter(k=>o[k] && isObj(o[k]))
         .map(k=>Object.assign({}, o[k], {id:k}));
     }
+    /* ★変更① 既知以外のフィールドはそのまま引きつぐ（かんりしゃ画面の追加項目を守る） */
+    const CLOUD_TOP = {player:1,message:1,lastResetDate:1,icons:1,iconSize:1,tiles:1,
+      shopItems:1,gacha:1,gachaSeen:1,inventory:1,useRequests:1,useHistory:1,notify:1,logs:1};
+    const LOCAL_ONLY = {sharedSnap:1, profileName:1, msg:1};
+    function passThrough(src, dropKeys){
+      const o = {};
+      if(!isObj(src)) return o;
+      Object.keys(src).forEach(k=>{
+        if(k === 'id') return;
+        if(dropKeys && dropKeys[k]) return;
+        const v = src[k];
+        if(v === undefined || typeof v === 'function') return;
+        o[k] = v;
+      });
+      return o;
+    }
+
     /* Firestore（マップ型）→ 画面用（配列型）へ変換 */
     function dataToLocal(o){
       const d = defaultDB();
@@ -1853,6 +1942,11 @@ renderAll();
       d.notify = cloudList(o.notify);
       d.logs = cloudList(o.logs);
       d.sharedSnap = {};   /* 共通タイルは使わないので常に空 */
+      /* ★変更① 知らない項目も持っておく（つぎの保存でけさないため） */
+      Object.keys(o).forEach(k=>{
+        if(CLOUD_TOP[k] || LOCAL_ONLY[k]) return;
+        d[k] = o[k];
+      });
       return d;
     }
     /* 画面用（配列型）→ Firestore（マップ型）へ変換 */
@@ -1865,27 +1959,35 @@ renderAll();
         tiles:{}, shopItems:{}, gacha:{cost:num(d.gacha&&d.gacha.cost,300),pool:{}}, gachaSeen:{},
         inventory:{}, useRequests:{}, useHistory:{}, notify:{}, logs:{}
       };
-      (d.tiles||[]).forEach((t,i)=>{ o.tiles[t.id||('tl_'+i)]=
+      /* ★変更① 知らないトップ項目もそのまま送る（消さない） */
+      Object.keys(d).forEach(k=>{
+        if(CLOUD_TOP[k] || LOCAL_ONLY[k]) return;
+        const v = d[k];
+        if(v === undefined || typeof v === 'function') return;
+        o[k] = v;
+      });
+      (d.tiles||[]).forEach((t,i)=>{ o.tiles[t.id||('tl_'+i)]= Object.assign(passThrough(t),
         {kind:t.kind||'daily', label:String(t.label||'タイル'), icon:t.icon||'', cardImage:t.cardImage||'',
          rewardExp:num(t.rewardExp,0), rewardMoney:num(t.rewardMoney,0),
-         completed:!!t.completed, pending:!!t.pending, archived:!!t.archived, ord:num(t.ord,(i+1)*10)}; });
-      (d.shopItems||[]).forEach((s,i)=>{ o.shopItems[s.id||('sh_'+i)]=
-        {name:s.name||'商品', price:num(s.price,0), desc:s.desc||'', icon:s.icon||'', ord:num(s.ord,(i+1)*10)}; });
-      ((d.gacha&&d.gacha.pool)||[]).forEach((g,i)=>{ o.gacha.pool[g.id||('g_'+i)]=
+         completed:!!t.completed, pending:!!t.pending, pendingAt:num(t.pendingAt,0),
+         archived:!!t.archived, ord:num(t.ord,(i+1)*10)}); });
+      (d.shopItems||[]).forEach((s,i)=>{ o.shopItems[s.id||('sh_'+i)]= Object.assign(passThrough(s),
+        {name:s.name||'商品', price:num(s.price,0), desc:s.desc||'', icon:s.icon||'', ord:num(s.ord,(i+1)*10)}); });
+      ((d.gacha&&d.gacha.pool)||[]).forEach((g,i)=>{ o.gacha.pool[g.id||('g_'+i)]= Object.assign(passThrough(g),
         {name:g.name||'景品', rarity:g.rarity||'N', weight:Math.max(0,num(g.weight,1)),
-         icon:g.icon||'', ord:num(g.ord,(i+1)*10)}; });
+         icon:g.icon||'', ord:num(g.ord,(i+1)*10)}); });
       /* ★ ガチャの入手記録（配列 → マップ） */
       (d.gachaSeen||[]).forEach(id=>{ if(id) o.gachaSeen[String(id)] = true; });
-      (d.inventory||[]).forEach((x,i)=>{ o.inventory[x.id||('inv_'+x.refId+'_'+i)]=
-        {refId:x.refId||'x', icon:x.icon||'', name:x.name||'アイテム', qty:num(x.qty,1)}; });
-      (d.useRequests||[]).forEach(r=>{ o.useRequests[r.id||('use_'+Date.now())]=
-        {refId:r.refId||'x', icon:r.icon||'', name:r.name||'アイテム', at:num(r.at,Date.now())}; });
-      (d.useHistory||[]).forEach((h,i)=>{ o.useHistory[h.id||('h'+(num(h.usedAt,Date.now())).toString(36)+i)]=
-        {icon:h.icon||'', name:h.name||'アイテム', usedAt:num(h.usedAt,Date.now())}; });
-      (d.notify||[]).forEach((n,i)=>{ o.notify[n.id||('n'+(num(n.at,Date.now())).toString(36)+i)]=
-        {at:num(n.at,Date.now()), text:String(n.text||'')}; });
-      (d.logs||[]).slice(0,120).forEach((l,i)=>{ o.logs[l.id||('l'+(num(l.ts,Date.now())-i).toString(36))]=
-        {ts:num(l.ts,Date.now()), text:String(l.text||'')}; });
+      (d.inventory||[]).forEach((x,i)=>{ o.inventory[x.id||('inv_'+x.refId+'_'+i)]= Object.assign(passThrough(x),
+        {refId:x.refId||'x', icon:x.icon||'', name:x.name||'アイテム', qty:num(x.qty,1)}); });
+      (d.useRequests||[]).forEach(r=>{ o.useRequests[r.id||('use_'+Date.now())]= Object.assign(passThrough(r),
+        {refId:r.refId||'x', icon:r.icon||'', name:r.name||'アイテム', at:num(r.at,Date.now())}); });
+      (d.useHistory||[]).forEach((h,i)=>{ o.useHistory[h.id||('h'+(num(h.usedAt,Date.now())).toString(36)+i)]= Object.assign(passThrough(h),
+        {icon:h.icon||'', name:h.name||'アイテム', usedAt:num(h.usedAt,Date.now())}); });
+      (d.notify||[]).forEach((n,i)=>{ o.notify[n.id||('n'+(num(n.at,Date.now())).toString(36)+i)]= Object.assign(passThrough(n),
+        {at:num(n.at,Date.now()), text:String(n.text||'')}); });
+      (d.logs||[]).slice(0,120).forEach((l,i)=>{ o.logs[l.id||('l'+(num(l.ts,Date.now())-i).toString(36))]= Object.assign(passThrough(l),
+        {ts:num(l.ts,Date.now()), text:String(l.text||'')}); });
       return o;
     }
     /* キー順を整えた比較用の正規形（中身が同じなら書き込まない＝競合予防） */
@@ -1952,10 +2054,17 @@ renderAll();
       }
       const ups = {};
       diff(cur, next, '', ups);
+      /* ★変更③ お店・ガチャ（共通カタログ）はこの画面からは書きかえない */
+      Object.keys(ups).forEach(p=>{ if(CATALOG_PATH.test(p)) delete ups[p]; });
       if(!Object.keys(ups).length) return;
       try{
         await updateDoc(ref, ups);
-        mirror.kids[kidId] = next;           /* 送った内容を控えに */
+        /* 送った内容を控えに（カタログ部分はサーバーの値を保つ） */
+        const keep = Object.assign({}, next);
+        keep.shopItems = cur.shopItems;
+        keep.gacha = cur.gacha;
+        if(cur.catalogRev !== undefined) keep.catalogRev = cur.catalogRev;
+        mirror.kids[kidId] = keep;
       }catch(e){ console.error('Firestore 保存に失敗', e); }
     }
 
@@ -1969,6 +2078,79 @@ renderAll();
         /* REG_KEY（名簿）はかんりしゃ画面が管理するのでこども画面からは書き込まない */
       });
     });
+
+    /* ==========================================================
+       ★変更③ お店・ガチャを全ファイル共通にする
+         shared/catalog … {rev, shopItems{}, gacha{cost,pool{}}}
+         kids/{id}.catalogRev … その子が最後にそろえた rev
+       どこか1つで内容が変わったら、ほかの全ファイルへ自動でそろえます。
+       ========================================================== */
+    function catOf(o){
+      return {
+        shopItems: (o && isObj(o.shopItems)) ? o.shopItems : {},
+        gacha: { cost:num(o && o.gacha && o.gacha.cost, 300),
+                 pool:(o && o.gacha && isObj(o.gacha.pool)) ? o.gacha.pool : {} }
+      };
+    }
+    function catCount(c){ return Object.keys(c.shopItems).length + Object.keys(c.gacha.pool).length; }
+    function catSame(a,b){ return canon(catOf(a)) === canon(catOf(b)); }
+
+    async function syncCatalog(){
+      if(!fdb || catOff || catBusy) return;
+      if(sharedCat === undefined) return;                 /* まだ共通データを受信していない */
+      const me = mirror.kids[APP_ID];
+      if(!me) return;                                     /* 自分のデータがまだ無い */
+      const ref = doc(fdb, SHARED, CAT_DOC);
+      const mineCat = catOf(me);
+
+      /* ① 共通データがまだ無い → いちばん中身が多い子のぶんで作る */
+      if(sharedCat === null){
+        let best = mineCat, bestN = catCount(mineCat);
+        Object.keys(mirror.kids).forEach(id=>{
+          const c = catOf(mirror.kids[id]); const n = catCount(c);
+          if(n > bestN){ best = c; bestN = n; }
+        });
+        if(!bestN) return;
+        catBusy = true;
+        try{ await setDoc(ref, Object.assign({rev:Date.now()}, best)); }
+        catch(e){ console.error('共通カタログを作れませんでした', e); catOff = true; }
+        catBusy = false;
+        return;
+      }
+
+      const rev = num(sharedCat.rev, 0);
+
+      /* ② 中身が同じ → 目じるし（catalogRev）だけそろえる */
+      if(catSame(me, sharedCat)){
+        if(num(me.catalogRev,0) !== rev){
+          catBusy = true;
+          try{
+            await updateDoc(doc(fdb, KIDS, APP_ID), {catalogRev:rev});
+            if(mirror.kids[APP_ID]) mirror.kids[APP_ID].catalogRev = rev;
+          }catch(e){ console.error(e); }
+          catBusy = false;
+        }
+        return;
+      }
+
+      /* ③ この子のぶんが「あとから編集された」 → 共通データを更新して全員にそろえる */
+      if(num(me.catalogRev,0) === rev){
+        catBusy = true;
+        try{ await setDoc(ref, Object.assign({rev:Date.now()}, mineCat)); }
+        catch(e){ console.error('共通カタログを更新できませんでした', e); catOff = true; }
+        catBusy = false;
+        return;
+      }
+
+      /* ④ 共通データのほうが新しい → この子に取りこむ（商品名・ガチャがそろう） */
+      catBusy = true;
+      const ups = {};
+      diff(mineCat, catOf(sharedCat), '', ups);
+      ups.catalogRev = rev;
+      try{ await updateDoc(doc(fdb, KIDS, APP_ID), ups); }
+      catch(e){ console.error('共通カタログを取りこめませんでした', e); }
+      catBusy = false;
+    }
 
     function refreshAll(){ if(window.__lqRefresh) window.__lqRefresh(true); }
     function firstReady(){
@@ -1997,12 +2179,17 @@ renderAll();
       });
       if(changed) refreshAll();
       firstReady();
+      syncCatalog();                       /* ★変更③ お店・ガチャをそろえる */
     }
     function applyProfilesSnap(snap){
       const list = [];
       snap.forEach(d=>{ const dd = d.data()||{}; list.push({ id:d.id, name:dd.name||d.id }); });
       list.sort((a,b)=>String(a.name).localeCompare(String(b.name),'ja'));
       if(LQSTORE.applyRemote(REG_KEY, JSON.stringify(list))) refreshAll();
+    }
+    function applyCatalogSnap(s){
+      sharedCat = s.exists() ? (s.data() || null) : null;
+      syncCatalog();
     }
 
     async function startBridge(){
@@ -2013,6 +2200,11 @@ renderAll();
         if(!u) return;
         onSnapshot(collection(fdb, KIDS),     applyKidSnap,      err=>console.error(err));
         onSnapshot(collection(fdb, PROFILES), applyProfilesSnap, err=>console.error(err));
+        /* ★変更③ お店・ガチャの共通データ */
+        onSnapshot(doc(fdb, SHARED, CAT_DOC), applyCatalogSnap, err=>{
+          console.error('共通カタログを読めません（Firestore ルールを確認してください）', err);
+          catOff = true;
+        });
       });
       try{ await signInAnonymously(auth); }catch(e){ console.error(e); }
     }
