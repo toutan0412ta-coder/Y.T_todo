@@ -1958,6 +1958,14 @@ function pullGacha(){
     renderAll();
   });
 }
+/* ★ はずれの見わけ方：名前かレア度に「はずれ／ハズレ／外れ／MISS」が入っていればはずれ。
+     かんりしゃ画面では、景品名を「はずれ」にして重みを決めるだけでOKです。 */
+const MISS_RE = /(はずれ|ハズレ|外れ|ﾊｽﾞﾚ|miss)/i;
+function isMissPrize(g){
+  if(!g) return false;
+  if(g.miss === true || g.nogift === true) return true;
+  return MISS_RE.test(String(g.name||'')) || MISS_RE.test(String(g.rarity||''));
+}
 
 const rarityColor = {N:'#7a7a7a', R:'#3a7bd5', SR:'#9b4fd6', SSR:'#e0a615'};
 function showGachaResult(item, miss){
