@@ -466,7 +466,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
    ========================================================== */
 img.ri.s-shop.shop-icon-big{
   width:auto; height:auto;
-  max-width:100%; max-height:var(--ic-shop-max);
+  max-width:100%; max-height:none;
   object-fit:contain; image-rendering:auto;   /* 大きい絵はなめらかに表示 */
   border-radius:8px; margin:0 auto;
 }
@@ -1191,18 +1191,18 @@ function shopIconBase(){
 }
 function applyShopIconSize(img, row, w, h){
   if(!img || !row || !w || !h) return;
-  const base = shopIconBase();
+  const base = shopIconBase();          /* 設定から出した表示サイズ（上限512） */
   const long = Math.max(w, h);
-  if(long <= base){                       /* 小さい絵：これまでどおりの見た目 */
+  const size = Math.min(base, long);    /* 元画像より大きくは拡大しない */
+  if(size <= SHOP_ICON_STACK){          /* ふつうの大きさ：横ならびのまま */
     img.classList.remove('shop-icon-big');
     img.style.width = '';
     row.classList.remove('has-big-icon');
     return;
   }
-  const size = Math.min(SHOP_ICON_MAX, long);   /* ★ 512px をこえないようにする */
   img.classList.add('shop-icon-big');
-  img.style.width = size + 'px';               /* よこはば。たては自動（比率そのまま） */
-  row.classList.toggle('has-big-icon', size > SHOP_ICON_STACK);
+  img.style.width = size + 'px';
+  row.classList.add('has-big-icon');    /* 大きいときだけ縦ならび */
 }
 function fitShopIcon(row){
   if(!row) return;
