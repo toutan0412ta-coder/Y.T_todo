@@ -1931,33 +1931,6 @@ function playGachaAnim(done){
     gachaTimers.push(setTimeout(finishGachaAnim, GACHA_ANIM.holdMs));   /* 待ち時間（いまは0） */
   }, GACHA_ANIM.playMs));
 }
-
-function pullGacha(){
-  if(gachaBusy) return;                                     /* 演出ちゅうは連打できません */
-  if(db.gacha.pool.length===0){ toast('景品がありません'); return; }
-  if(db.player.money < db.gacha.cost){ toast('お金が足りません！'); return; }
-  db.player.money -= db.gacha.cost;
-  const pool = db.gacha.pool;
-  const totalWeight = pool.reduce((s,p)=>s+num(p.weight),0) || 1;
-  let r = Math.random()*totalWeight;
-  let picked = pool[pool.length-1];
-  for(const p of pool){ if(r<num(p.weight)){ picked=p; break;} r -= num(p.weight); }
-  const existing = db.inventory.find(i=>i.refId==='gacha_'+picked.id);
-  if(existing){ existing.qty += 1; }
-  else{ db.inventory.push({id:'inv_g_'+picked.id+'_'+Date.now(), refId:'gacha_'+picked.id, icon:picked.icon, name:picked.name, qty:1}); }
-  /* ★ 入手記録（ラインナップの ? をひらく） */
-  if(!Array.isArray(db.gachaSeen)) db.gachaSeen = [];
-  if(db.gachaSeen.indexOf(String(picked.id)) < 0) db.gachaSeen.push(String(picked.id));
-  saveDB(db);
-
-  gachaBusy = true;
-  renderAll();                      /* お金の表示をすぐ反映（ボタンはおせません） */
-  playGachaAnim(()=>{               /* ★ GIFを12秒1回だけ再生 → 結果発表 */
-    gachaBusy = false;
-    showGachaResult(picked);
-    renderAll();
-  });
-}
 /* ★ はずれの見わけ方：名前かレア度に「はずれ／ハズレ／外れ／MISS」が入っていればはずれ。
      かんりしゃ画面では、景品名を「はずれ」にして重みを決めるだけでOKです。 */
 const MISS_RE = /(はずれ|ハズレ|外れ|ﾊｽﾞﾚ|miss)/i;
