@@ -2474,40 +2474,6 @@ renderAll();
       }
       catBusy = false;
     }
-      const rev = num(sharedCat.rev, 0);
-
-      /* ② 中身が同じ → 目じるし（catalogRev）だけそろえる */
-      if(catSame(me, sharedCat)){
-        if(num(me.catalogRev,0) !== rev){
-          catBusy = true;
-          try{
-            await updateDoc(doc(fdb, KIDS, APP_ID), {catalogRev:rev});
-            if(mirror.kids[APP_ID]) mirror.kids[APP_ID].catalogRev = rev;
-          }catch(e){ console.error(e); }
-          catBusy = false;
-        }
-        return;
-      }
-
-      /* ③ この子のぶんが「あとから編集された」 → 共通データを更新して全員にそろえる */
-      if(num(me.catalogRev,0) === rev){
-        catBusy = true;
-        try{ await setDoc(ref, Object.assign({rev:Date.now()}, mineCat)); }
-        catch(e){ console.error('共通カタログを更新できませんでした', e); catOff = true; }
-        catBusy = false;
-        return;
-      }
-
-      /* ④ 共通データのほうが新しい → この子に取りこむ（商品名・ガチャがそろう） */
-      catBusy = true;
-      const ups = {};
-      diff(mineCat, catOf(sharedCat), '', ups);
-      ups.catalogRev = rev;
-      try{ await updateDoc(doc(fdb, KIDS, APP_ID), ups); }
-      catch(e){ console.error('共通カタログを取りこめませんでした', e); }
-      catBusy = false;
-    }
-
     function refreshAll(){ if(window.__lqRefresh) window.__lqRefresh(true); }
     function firstReady(){
       if(readyCalled) return;
