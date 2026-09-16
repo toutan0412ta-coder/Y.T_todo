@@ -853,7 +853,7 @@ img.gacha-emoji{
 <!-- ★ ガチャの演出（gatyaGIF.gif を12秒・1回だけ再生 → 結果）
      ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます -->
 <div class="gacha-anim" id="gachaAnim" aria-hidden="true">
-  <img class="anim-pic" id="gachaAnimGif" src="" alt="ガチャ演出">
+    <img class="anim-pic" id="gachaAnimGif" alt="ガチャ演出">
   <div class="anim-cap" id="gachaAnimCap">ガチャを回しています…</div>
   <div class="anim-hint">さいごまで見てね<br>いそぐときは下の「スキップ」をおしてね</div>
   <button class="anim-skip" id="gachaSkipBtn" type="button">スキップ ▶</button>
@@ -1088,7 +1088,12 @@ document.addEventListener('error', e=>{
   if(src) brokenSrc.add(src);
   if(el.id === 'imgModalPic') return;
   /* ★追加 演出GIFの img はけっして入れかえない（つぎの回も使うため） */
-  if(el.id === 'gachaAnimGif'){ gachaGifBroken = true; el.style.display = 'none'; return; }
+   if(el.id === 'gachaAnimGif'){
+    const s = el.getAttribute('src') || '';
+    if(!s || s.startsWith('data:')) return;
+    gachaGifBroken = true;
+    return;
+  }
   if(el.classList.contains('lv-gallery-img')){
     if(src) lvImgCache[src] = false;
     const cell = el.closest('.lv-cell');
