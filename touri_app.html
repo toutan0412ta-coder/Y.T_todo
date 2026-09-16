@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head><script>(function(w,i,g){w[g]=w[g]||[];if(typeof w[g].push=='function')w[g].push(i)})
-(window,'GTM-K3QN3TWK','google_tags_first_party');</script><script>(function(w,d,s,l){w[l]=w[l]||[];(function(){w[l].push(arguments);})('set', 'developer_id.dY2E1Nz', true);
-		var f=d.getElementsByTagName(s)[0],
-		j=d.createElement(s);j.async=true;j.src='/gk7x/';
-		f.parentNode.insertBefore(j,f);
-		})(window,document,'script','dataLayer');</script>
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>せいかつクエスト</title>
@@ -25,6 +20,8 @@
   --ic-sm:16px; --ic-lg:22px; --ic-status:28px; --ic-money:34px;
   --ic-reward:14px; --ic-tile:58px; --ic-inv:26px; --ic-shop:30px;
   --ic-use:22px; --ic-nav:26px; --ic-gacha:110px;
+  /* ★追加：お店（商品購入）のアイコンの上限サイズ。512pxまで対応します */
+  --ic-shop-max:512px;
   --gap-status:20px;
   --nav-fit:contain;   /* contain＝画像全体を表示 / cover＝枠いっぱい（端が切れます） */
   --nav-pad:0px;       /* ★ フッター画像のまわりの余白：0＝余白なし */
@@ -93,8 +90,8 @@ img.ri{width:var(--s); height:var(--s);}
 span.ri-e{font-size:var(--s);}
 .s-tile{--s:calc(var(--ic-tile)*var(--ic-scale));}
 .s-inv{--s:calc(var(--ic-inv)*var(--ic-scale));}
-/* ★ お店の商品アイコンを大きく（1.9倍） */
-.s-shop{--s:calc(var(--ic-shop)*var(--ic-scale)*1.9);}
+/* ★ お店の商品アイコン（1.9倍・ただし最大 512px まで） */
+.s-shop{--s:min(calc(var(--ic-shop)*var(--ic-scale)*1.9), var(--ic-shop-max));}
 /* ★ ガチャのラインナップ用 */
 .s-lineup{--s:calc(var(--ic-shop)*var(--ic-scale)*1.6);}
 .s-use{--s:calc(var(--ic-use)*var(--ic-scale));}
@@ -108,8 +105,8 @@ span.ri-e{font-size:var(--s);}
 .status-card .icon-fb.lg{font-size:calc(var(--ic-status)*var(--ic-scale)*1.3);}
 
 .tile-reward .icon-fb{font-size:calc(var(--ic-reward)*var(--ic-scale));}
-/* ★ お店の商品アイコン（絵文字のとき）も大きく */
-.shop-item-icon .icon-fb{font-size:calc(var(--ic-shop)*var(--ic-scale)*1.9);}
+/* ★ お店の商品アイコン（絵文字のとき）も大きく（最大 512px まで） */
+.shop-item-icon .icon-fb{font-size:min(calc(var(--ic-shop)*var(--ic-scale)*1.9), var(--ic-shop-max));}
 span.gacha-emoji{
   display:flex; align-items:center; justify-content:center;
   font-size:calc(var(--ic-gacha)*var(--ic-scale)*.82);
@@ -450,15 +447,39 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   background:var(--cream); border:2px solid var(--wood-darker); border-radius:10px;
   padding:8px 10px; margin-bottom:8px;
 }
-/* ★ お店の商品アイコンの枠を大きく（1.9倍） */
+/* ★変更：お店の商品アイコンの枠（最大 512px まで対応） */
 .shop-item-icon{
-  width:calc(var(--ic-shop)*var(--ic-scale)*1.9); flex:none;
+  width:min(calc(var(--ic-shop)*var(--ic-scale)*1.9), var(--ic-shop-max));
+  max-width:100%; flex:none;
   display:flex; align-items:center; justify-content:center;
 }
 .shop-item-info{flex:1; min-width:0;}
 .shop-item-name{font-size:13px; font-weight:bold; color:var(--wood-darker);}
 .shop-item-desc{font-size:10.5px; color:#5c4028;}
 .shop-item-price{font-size:17px; color:var(--gold-dark); font-weight:bold; display:flex; align-items:center; gap:4px; margin:3px 0 6px;}
+
+/* ==========================================================
+   ★追加：大きい商品アイコン（〜512px）のときの見せ方
+     ・絵は「もとの大きさ（最大512px）」で表示します
+     ・画面よりも大きいときは、画面の横はばに合わせて縮みます
+     ・大きい絵のときは、その行を縦ならびにして絵を大きく見せます
+   ========================================================== */
+img.ri.s-shop.shop-icon-big{
+  width:auto; height:auto;
+  max-width:100%; max-height:none;
+  object-fit:contain; image-rendering:auto;   /* 大きい絵はなめらかに表示 */
+  border-radius:8px; margin:0 auto;
+}
+.shop-item-row.has-big-icon{
+  flex-direction:column; align-items:center; text-align:center; gap:8px;
+}
+.shop-item-row.has-big-icon .shop-item-icon{width:100%; max-width:100%;}
+.shop-item-row.has-big-icon .shop-item-info{width:100%;}
+.shop-item-row.has-big-icon .shop-item-name{font-size:15px;}
+.shop-item-row.has-big-icon .shop-item-desc{font-size:11.5px;}
+.shop-item-row.has-big-icon .shop-item-price{justify-content:center; font-size:19px;}
+.shop-item-row.has-big-icon .buy-btn{width:100%; max-width:240px; font-size:14px; padding:9px 0;}
+
 .buy-btn{
   font-family:inherit; font-size:12px; font-weight:bold; letter-spacing:1px;
   color:#fff; white-space:nowrap; padding:7px 13px; flex:none;
@@ -473,9 +494,23 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   box-shadow:inset 0 3px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.20), 0 4px 0 #4a4a4a;
 }
 .gacha-box{background:var(--cream); border:3px solid var(--wood-darker); border-radius:12px; padding:14px; text-align:center;}
-.gacha-emoji{
-  width:calc(var(--ic-gacha)*var(--ic-scale)); height:calc(var(--ic-gacha)*var(--ic-scale));
-  margin:0 auto; object-fit:contain; image-rendering:pixelated;
+
+/* ==========================================================
+   ★ 追加：ガチャ画面の絵（image/assets/scene_gachamachine.png）
+      画像ぜんたいが見えるように、大きく・比率そのままで表示します
+   ========================================================== */
+.gacha-stage{
+  position:relative; width:100%; margin:0 auto 10px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  background:linear-gradient(180deg,#fff6da,#efdcab);
+  border:3px solid var(--wood-darker); border-radius:12px; padding:8px;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.5);
+}
+img.gacha-emoji{
+  width:100%; max-width:320px; height:auto;
+  max-height:calc(var(--ic-gacha)*var(--ic-scale)*2.6);
+  margin:0 auto; display:block;
+  object-fit:contain; image-rendering:pixelated;
 }
 .gacha-desc{font-size:12px; color:#5c4028; margin:6px 0 10px;}
 .gacha-cost{font-size:20px; color:var(--gold-dark); font-weight:bold; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:6px;}
@@ -505,6 +540,7 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   padding:7px 4px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center;
 }
 .lineup-cell.unknown{background:#d8cdb8; border-color:#6b5c46;}
+.lineup-cell.miss{opacity:.72; filter:grayscale(.55)}
 .lineup-icon{
   display:flex; align-items:center; justify-content:center;
   min-height:calc(var(--ic-shop)*var(--ic-scale)*1.6);
@@ -570,6 +606,48 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 .modal-box .name{font-size:16px; font-weight:bold; color:var(--wood-darker); margin-bottom:14px;}
 .modal-box .close-btn{background:var(--purple); color:#fff; border:2px solid var(--purple-dark); border-radius:8px; padding:8px 22px; font-family:inherit; cursor:pointer;}
 
+/* ==========================================================
+   ★ 追加：ガチャの演出（image/assets/gatyaGIF.gif）
+      ガチャを回す → GIFを12秒だけ再生（ループなし・1回だけ）
+      → 結果モーダル
+      ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます
+   ========================================================== */
+.gacha-anim{
+  position:fixed; inset:0; z-index:150; padding:16px;
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  background:rgba(8,5,2,.94); cursor:default;   /* ★変更 タップでスキップしない */
+}
+.gacha-anim.show{display:flex;}
+.gacha-anim .anim-pic{
+  width:100%; max-width:min(94vw,760px); max-height:60vh;
+  object-fit:contain; display:block; background:#000;
+  border:4px solid var(--gold); border-radius:14px;
+  box-shadow:0 0 30px rgba(255,190,60,.35);
+}
+.gacha-anim .anim-cap{
+  color:#ffe9a8; font-size:17px; font-weight:bold; text-align:center;
+  text-shadow:2px 2px 0 rgba(0,0,0,.6); line-height:1.5;
+}
+.gacha-anim .anim-hint{color:#cbb98f; font-size:11.5px; text-align:center; line-height:1.5;}
+/* ★追加：スキップボタン（演出中だけ、画面の下に出ます） */
+.gacha-anim .anim-skip{
+  font-family:inherit; font-size:16px; font-weight:bold; letter-spacing:2px;
+  color:#fff8dc; padding:12px 30px; margin-top:2px;
+  background:var(--purple); border:3px solid #2b1a42; border-radius:0;
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.28), inset 0 -4px 0 rgba(0,0,0,.22), 0 5px 0 #2b1a42;
+  text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  cursor:pointer; image-rendering:pixelated; transition:none;
+}
+.gacha-anim .anim-skip:active{
+  transform:translateY(5px);
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.18), inset 0 -4px 0 rgba(0,0,0,.26);
+}
+.gacha-anim .anim-skip:focus-visible{outline:3px solid var(--gold); outline-offset:3px;}
+.gacha-anim .anim-skip:disabled{
+  background:#6b6b6b; border-color:#4a4a4a; color:#dcdcdc; cursor:default; transform:none;
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.16), inset 0 -4px 0 rgba(0,0,0,.20), 0 5px 0 #4a4a4a;
+}
+
 /* ===== レベルコレクション ===== */
 .gallery-wrap{
   margin-top:12px; background:var(--blue-dark);
@@ -631,6 +709,10 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   .status-card .exp-text{font-size:14px;}
   .avatar-stage{aspect-ratio:2/1; height:auto;}
   .msg-body{max-height:88px; font-size:13px;}
+  .gacha-anim{gap:10px;}
+  .gacha-anim .anim-pic{max-height:52vh;}
+  .gacha-anim .anim-cap{font-size:14.5px;}
+  .gacha-anim .anim-skip{font-size:14.5px; padding:11px 24px;}
 }
 /* スマホ：アプリ枠をやめて全画面表示（ページの上下スクロールも停止） */
 @media (max-width:767px){
@@ -647,6 +729,9 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
   body{padding:6px; align-items:stretch;}
   .app{height:calc(100dvh - 12px);}
   .avatar-stage{aspect-ratio:2/1; height:auto;}
+  .gacha-anim{gap:8px;}
+  .gacha-anim .anim-pic{max-height:48vh;}
+  .gacha-anim .anim-skip{font-size:14px; padding:9px 22px;}
 }
 @media (prefers-reduced-motion: reduce){
   .done-spark, .done-spark::before, .done-spark i,
@@ -735,7 +820,10 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       </div>
       <div class="shop-panel" id="panel-gacha">
         <div class="gacha-box">
-          <img class="gacha-emoji" data-icon="gacha" data-fb="🎰" src="image/assets/scene_gachamachine.png" alt="ガチャ">
+          <!-- ★ ガチャの絵：image/assets/scene_gachamachine.png -->
+          <div class="gacha-stage">
+            <img class="gacha-emoji" data-icon="gacha" data-fb="🎰" src="image/assets/scene_gachamachine.png" alt="ガチャ">
+          </div>
           <div class="gacha-desc">レアなアイテムをゲット！</div>
           <div class="gacha-cost">1回 <img class="icon-img lg" data-icon="coin" data-fb="🪙" src="image/assets/coin.gif" alt="お金"> <span id="gachaCostText">300</span></div>
           <button class="gacha-btn" id="gachaBtn">ガチャを回す</button>
@@ -761,6 +849,16 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ★ ガチャの演出（gatyaGIF.gif を12秒・1回だけ再生 → 結果）
+     ★変更：画面タップでは進みません。下の「スキップ」ボタンだけで進みます -->
+<div class="gacha-anim" id="gachaAnim" aria-hidden="true">
+    <img class="anim-pic" id="gachaAnimGif" alt="ガチャ演出">
+  <div class="anim-cap" id="gachaAnimCap">ガチャを回しています…</div>
+  <div class="anim-hint">さいごまで見てね<br>いそぐときは下の「スキップ」をおしてね</div>
+  <button class="anim-skip" id="gachaSkipBtn" type="button">スキップ ▶</button>
+</div>
+
 <div class="modal-back" id="gachaModal">
   <div class="modal-box">
     <div class="big-icon" id="modalIcon">🎁</div>
@@ -782,6 +880,8 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
    ▼ だれの画面かは「ファイル名」で自動判定します
       yuika_app.html → yuika（ゆいか）
       touri_app.html → touri（とうり）
+      ★追加：touri_app2.html のように、うしろに数字がついても
+              ちゃんと touri と判定します
       2人分まったく同じ中身でOKです
    ▼ タイルのあつかい
       日々タイル・通常タイル・特別タイル
@@ -802,6 +902,24 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
       どのファイル（yuika_app / touri_app / user3_app …）でも
       同じ商品名・同じガチャ内容が表示されます。
       どこか1つで内容が変わると、ほかのファイルにも自動でそろいます。
+   ▼ ★追加④ ガチャの見た目と演出
+      ・ガチャ画面に image/assets/scene_gachamachine.png を大きく表示
+      ・ガチャを回すと image/assets/gatyaGIF.gif を全画面で再生します
+      ・★変更⑤ 再生は「12秒・1回だけ」。12秒たった時点でそのコマを
+        静止画にさしかえて再生を打ち切るので、ループ（2周目）になりません。
+      ・そのあと GACHA_ANIM.holdMs だけ待ってから結果を出します
+        （いまは 0 ＝ 待たずにすぐ結果を出します）
+      ・★変更⑥ 演出は画面タップでは進みません。
+        画面の下にでる「スキップ」ボタンをおしたときだけ結果にすすみます。
+   ▼ ★追加⑦ 商品購入（お店）のアイコンは 512px まで対応
+      ・商品の絵は「もとの大きさ」で表示します（上限 512px）
+      ・512px をこえる絵は 512px までにおさめます
+      ・画面よりも大きいときは、画面の横はばに合わせて縮めます
+      ・大きい絵（120pxより大きい）のときは、その商品の行を
+        縦ならびにして、絵・名前・購入ボタンが見やすいようにします
+      ・小さいアイコンは、これまでどおりの見た目のままです
+      ・上限を変えたいときは、下の SHOP_ICON_MAX と
+        CSSの --ic-shop-max を同じ数字にしてください
    ▼ 保存先
       Firebase  Cloud Firestore のみ（即時同期）
       ※ ブラウザ内の永続保存は使いません。
@@ -809,7 +927,8 @@ span.lv-star{display:inline-flex; align-items:center; justify-content:center;
    ========================================================== */
 function detectAppId(){
   const file = decodeURIComponent((location.pathname.split('/').pop() || '').trim());
-  const m = file.match(/^(.+?)_app\.html?$/i);
+  /* ★追加：touri_app.html / touri_app2.html / touri_app-2.html などにも対応 */
+  const m = file.match(/^(.+?)_app[-_]?\d*\.html?$/i);
   return (m && m[1]) ? m[1] : 'yuika';
 }
 const NAME_MAP = { yuika:'ゆいか', touri:'とうり' };
@@ -878,6 +997,7 @@ const DEFAULT_ICONS = {
   coin         : A + 'coin.gif',
   star         : A + 'star.gif',
   gacha        : A + 'scene_gachamachine.png',
+  gachaGif     : A + 'gatyaGIF.gif',       /* ★追加 ガチャを回したときの演出GIF */
   gachaUnknown : A + 'icon_unknown.png',   /* ★ まだ取得していない景品用のアイコン */
   navHome      : A + 'icon_nav_home.png',
   navStatus    : A + 'icon_nav_status.png',
@@ -889,6 +1009,29 @@ const DEFAULT_ICON_SIZE = {
   sm:16, lg:22, status:28, money:34, reward:14,
   tile:58, inv:26, shop:30, use:22, nav:26, gacha:110
 };
+
+/* ==========================================================
+   ★追加⑦ 商品購入（お店）のアイコンの大きさ
+     SHOP_ICON_MAX   … 商品アイコンの上限（ピクセル）。ご指定の 512
+                       ※ CSS の --ic-shop-max と同じ数字にしてください
+     SHOP_ICON_STACK … これより大きいアイコンのときは、その行を
+                       縦ならびにして絵を大きく見せます
+   ========================================================== */
+const SHOP_ICON_MAX   = 512;
+const SHOP_ICON_STACK = 120;
+const shopIconNatural = {};   /* 画像のもとの大きさを覚えておく（ちらつき防止） */
+
+/* ==========================================================
+   ★変更⑤ ガチャ演出のじかん（ミリ秒）
+     playMs … gatyaGIF.gif を再生する長さ
+               ＝ご指定の 12秒（12000）。この時間がすぎたら、そのときの
+                 コマを静止画にして再生を打ち切ります（＝ループしません）
+     holdMs … 再生がおわってから結果を出すまでの停止時間
+               （0 ＝ 待たずにすぐ結果を出します）
+     ※ GIF そのものが12秒より短いばあいも、12秒の時点で必ず止まります。
+        ぴったり1回だけ見せたいときは、GIFの長さ＝12秒にしてください。
+   ========================================================== */
+const GACHA_ANIM = { playMs:12000, holdMs:0 };
 
 const KIND_META = {
   daily  :{label:'日々', title:'☀ 日々のタイル', note:'毎日24時に達成だけリセット'},
@@ -935,6 +1078,7 @@ function fixTile(v){
    画像フォールバック
    ========================================================== */
 const brokenSrc = new Set();
+let gachaGifBroken = false;          /* ★追加 演出GIFが無いときは演出をとばす */
 let rerenderTimer = null;
 function scheduleRender(){ clearTimeout(rerenderTimer); rerenderTimer = setTimeout(()=>renderAll(), 60); }
 document.addEventListener('error', e=>{
@@ -943,6 +1087,13 @@ document.addEventListener('error', e=>{
   const src = el.getAttribute('src') || '';
   if(src) brokenSrc.add(src);
   if(el.id === 'imgModalPic') return;
+  /* ★追加 演出GIFの img はけっして入れかえない（つぎの回も使うため） */
+   if(el.id === 'gachaAnimGif'){
+    const s = el.getAttribute('src') || '';
+    if(!s || s.startsWith('data:')) return;
+    gachaGifBroken = true;
+    return;
+  }
   if(el.classList.contains('lv-gallery-img')){
     if(src) lvImgCache[src] = false;
     const cell = el.closest('.lv-cell');
@@ -990,6 +1141,25 @@ function applyFreeze(){
     freezeSrc(src, out=>{ if(out && el.isConnected) el.src = out; });
   });
 }
+/* ★追加 いま表示されているコマでGIFを止める（12秒たったところで停止させるため）
+   canvas に写した静止画（PNG）に src を入れかえるので、GIFの再生が終わります
+   ＝ ループ（2周目）になりません */
+function freezeCurrentFrame(im){
+  if(!im) return false;
+  try{
+    const w = im.naturalWidth || im.clientWidth || 480;
+    const h = im.naturalHeight || im.clientHeight || 270;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, w, h);
+    im.src = c.toDataURL('image/png');
+    return true;
+  }catch(e){
+    /* 止められなかったときも、GIFの読みこみを切って再生を終わらせます */
+    try{ im.removeAttribute('src'); }catch(e2){}
+    return false;
+  }
+}
 
 function renderIcon(icon, cls, fb){
   const c = cls || 's-inv';
@@ -1010,6 +1180,52 @@ function miniIcon(src, fb, cls, freeze){
     return `<img class="${c}" src="${escapeHTML(src)}" data-fb="${fb}" alt="">`;
   }
   return `<span class="${c} icon-fb">${fb}</span>`;
+}
+
+/* ==========================================================
+   ★追加⑦ お店（商品購入）のアイコンを 512px まで表示する
+     ・shopIconBase()      … ふだんのアイコンの大きさ（CSSの設定から計算）
+     ・applyShopIconSize() … 画像のもとの大きさに合わせて表示サイズを決める
+     ・fitShopIcon()       … 商品1行ぶんの画像を調べて上の処理をよぶ
+   ========================================================== */
+function shopIconBase(){
+  const cs = getComputedStyle(document.documentElement);
+  const base  = parseFloat(cs.getPropertyValue('--ic-shop'))  || 30;
+  const scale = parseFloat(cs.getPropertyValue('--ic-scale')) || 1;
+  return Math.min(SHOP_ICON_MAX, base * scale * 1.9);
+}
+function applyShopIconSize(img, row, w, h){
+  if(!img || !row || !w || !h) return;
+  const base = shopIconBase();          /* 設定から出した表示サイズ（上限512） */
+  const long = Math.max(w, h);
+  const size = Math.min(base, long);    /* 元画像より大きくは拡大しない */
+  if(size <= SHOP_ICON_STACK){          /* ふつうの大きさ：横ならびのまま */
+    img.classList.remove('shop-icon-big');
+    img.style.width = '';
+    row.classList.remove('has-big-icon');
+    return;
+  }
+  img.classList.add('shop-icon-big');
+  img.style.width = size + 'px';
+  row.classList.add('has-big-icon');    /* 大きいときだけ縦ならび */
+}
+function fitShopIcon(row){
+  if(!row) return;
+  const img = row.querySelector('.shop-item-icon img.ri');
+  if(!img) return;                            /* 絵文字のときは何もしません */
+  const src = img.getAttribute('src') || '';
+  const known = shopIconNatural[src];
+  if(known) applyShopIconSize(img, row, known.w, known.h);   /* 前に調べた大きさをすぐ反映 */
+  if(img.complete && img.naturalWidth){
+    shopIconNatural[src] = {w:img.naturalWidth, h:img.naturalHeight};
+    applyShopIconSize(img, row, img.naturalWidth, img.naturalHeight);
+    return;
+  }
+  img.addEventListener('load', ()=>{
+    if(!img.naturalWidth) return;
+    shopIconNatural[src] = {w:img.naturalWidth, h:img.naturalHeight};
+    applyShopIconSize(img, row, img.naturalWidth, img.naturalHeight);
+  }, {once:true});
 }
 
 /* ==========================================================
@@ -1330,10 +1546,13 @@ function applyLook(){
   Object.keys(DEFAULT_ICON_SIZE).forEach(k=>{
     r.setProperty('--ic-'+k, num(sz[k], DEFAULT_ICON_SIZE[k]) + 'px');
   });
+  /* ★追加⑦ 商品アイコンの上限（512px）もCSSへ渡す */
+  r.setProperty('--ic-shop-max', SHOP_ICON_MAX + 'px');
   r.setProperty('--bg-room', (ic.bgRoom && !brokenSrc.has(ic.bgRoom)) ? `url("${ic.bgRoom}")` : 'none');
   applyCharacterBg();
   document.querySelectorAll('[data-icon]').forEach(el=>{
     if(el.tagName !== 'IMG') return;
+    if(el.id === 'gachaAnimGif') return;          /* ★ 演出GIFは自分で管理します */
     const v = ic[el.dataset.icon];
     if(v && !brokenSrc.has(v) && el.getAttribute('src') !== v) el.src = v;
   });
@@ -1640,41 +1859,139 @@ function renderShop(){
         saveDB(db); toast(`「${item.name}」を購入しました！`); renderAll();
       };
       list.appendChild(row);
+      /* ★追加⑦ 商品アイコンを「もとの大きさ（最大512px）」で表示する */
+      fitShopIcon(row);
     });
   }
   setText('gachaCostText', num(db.gacha.cost).toLocaleString());
   const gb = $('gachaBtn');
-  if(gb) gb.disabled = (db.player.money < db.gacha.cost) || db.gacha.pool.length===0;
+  /* ★追加 演出ちゅうはボタンをおせないようにする */
+  if(gb) gb.disabled = gachaBusy || (db.player.money < db.gacha.cost) || db.gacha.pool.length===0;
   renderGachaLineup();
 }
 
+/* ==========================================================
+   ★変更⑤⑥ ガチャの演出（gatyaGIF.gif）
+     1) 全画面でGIFを再生（毎回1コマ目から）
+     2) GACHA_ANIM.playMs（12秒）たったら、そのコマを静止画にして
+        再生を打ち切る＝ループしません（1回だけの表示）
+     3) GACHA_ANIM.holdMs（いまは0）まってから結果モーダルへ
+     ※ とばしたいときは、画面の下にでる「スキップ」ボタンだけで進みます。
+        画面のほかの場所をタップしても、なにも起きません。
+   ========================================================== */
+let gachaBusy = false;
+let gachaTimers = [];
+function clearGachaTimers(){ gachaTimers.forEach(clearTimeout); gachaTimers = []; }
+function gachaGifSrc(){
+  const v = fixAsset((db.icons && db.icons.gachaGif) || (A + 'gatyaGIF.gif'));
+  return isImagePath(v) ? v : '';
+}
+function setSkipVisible(on){
+  const sk = $('gachaSkipBtn');
+  if(!sk) return;
+  sk.disabled = !on;
+  sk.style.display = on ? '' : 'none';
+}
+function hideGachaAnim(){
+  const ov = $('gachaAnim');
+  setSkipVisible(false);
+  if(!ov) return;
+  ov.classList.remove('show');
+  ov.setAttribute('aria-hidden','true');
+  const im = $('gachaAnimGif');
+  if(im) im.removeAttribute('src');   /* GIFを止めて次回きれいに再生 */
+}
+let gachaAnimDone = null;             /* 演出のあとにやること（スキップ時にも使う） */
+function finishGachaAnim(){
+  clearGachaTimers();
+  hideGachaAnim();
+  const fn = gachaAnimDone;
+  gachaAnimDone = null;
+  if(typeof fn === 'function') fn();
+}
+function playGachaAnim(done){
+  const ov = $('gachaAnim'), im = $('gachaAnimGif');
+  const src = gachaGifSrc();
+  gachaAnimDone = done;
+  /* GIFが用意されていないときは、演出なしでそのまま結果へ */
+  if(!ov || !im || !src || gachaGifBroken){
+    clearGachaTimers();
+    setSkipVisible(false);
+    gachaTimers.push(setTimeout(finishGachaAnim, 300));
+    return;
+  }
+  clearGachaTimers();
+  im.style.display = '';
+  im.onerror = ()=>{ gachaGifBroken = true; finishGachaAnim(); };
+  /* うしろに時刻をつけて、毎回さいしょのコマから再生させる */
+  im.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now();
+  setText('gachaAnimCap','ガチャを回しています…');
+  ov.classList.add('show');
+  ov.setAttribute('aria-hidden','false');
+  setSkipVisible(true);               /* ★変更⑥ 再生中はスキップボタンを出す */
+
+  gachaTimers.push(setTimeout(()=>{
+    freezeCurrentFrame(im);                   /* ★12秒で再生を打ち切って静止（ループしない） */
+    setText('gachaAnimCap','なにが出るかな…？');
+    gachaTimers.push(setTimeout(finishGachaAnim, GACHA_ANIM.holdMs));   /* 待ち時間（いまは0） */
+  }, GACHA_ANIM.playMs));
+}
+/* ★ はずれの見わけ方：名前かレア度に「はずれ／ハズレ／外れ／MISS」が入っていればはずれ。
+     かんりしゃ画面では、景品名を「はずれ」にして重みを決めるだけでOKです。 */
+const MISS_RE = /(はずれ|ハズレ|外れ|ﾊｽﾞﾚ|miss)/i;
+function isMissPrize(g){
+  if(!g) return false;
+  if(g.miss === true || g.nogift === true) return true;
+  return MISS_RE.test(String(g.name||'')) || MISS_RE.test(String(g.rarity||''));
+}
+
+const rarityColor = {N:'#7a7a7a', R:'#3a7bd5', SR:'#9b4fd6', SSR:'#e0a615'};
+function showGachaResult(item, miss){
+  const ic = $('modalIcon'), ra = $('modalRarity');
+  if(ic) ic.innerHTML = miss ? renderIcon(item.icon,'s-modal','💨')
+                             : renderIcon(item.icon,'s-modal','🎁');
+  if(ra){
+    ra.textContent  = miss ? 'はずれ' : item.rarity;
+    ra.style.color  = miss ? '#7a7a7a' : (rarityColor[item.rarity]||'#333');
+  }
+  setText('modalName', miss ? 'はずれ… つぎはきっと出るよ！' : item.name);
+  const nt = $('modalNote');
+  if(nt) nt.textContent = miss ? 'アイテムはもらえませんでした' : '';
+  const m = $('gachaModal'); if(m) m.classList.add('show');
+}
+
 function pullGacha(){
+  if(gachaBusy) return;
   if(db.gacha.pool.length===0){ toast('景品がありません'); return; }
   if(db.player.money < db.gacha.cost){ toast('お金が足りません！'); return; }
   db.player.money -= db.gacha.cost;
+
   const pool = db.gacha.pool;
   const totalWeight = pool.reduce((s,p)=>s+num(p.weight),0) || 1;
   let r = Math.random()*totalWeight;
   let picked = pool[pool.length-1];
   for(const p of pool){ if(r<num(p.weight)){ picked=p; break;} r -= num(p.weight); }
-  const existing = db.inventory.find(i=>i.refId==='gacha_'+picked.id);
-  if(existing){ existing.qty += 1; }
-  else{ db.inventory.push({id:'inv_g_'+picked.id+'_'+Date.now(), refId:'gacha_'+picked.id, icon:picked.icon, name:picked.name, qty:1}); }
-  /* ★ 入手記録（ラインナップの ? をひらく） */
-  if(!Array.isArray(db.gachaSeen)) db.gachaSeen = [];
-  if(db.gachaSeen.indexOf(String(picked.id)) < 0) db.gachaSeen.push(String(picked.id));
-  saveDB(db); showGachaResult(picked); renderAll();
-}
 
-const rarityColor = {N:'#7a7a7a', R:'#3a7bd5', SR:'#9b4fd6', SSR:'#e0a615'};
-function showGachaResult(item){
-  const ic = $('modalIcon'), ra = $('modalRarity');
-  if(ic) ic.innerHTML = renderIcon(item.icon,'s-modal','🎁');
-  if(ra){ ra.textContent = item.rarity; ra.style.color = rarityColor[item.rarity]||'#333'; }
-  setText('modalName', item.name);
-  const m = $('gachaModal'); if(m) m.classList.add('show');
-}
+  const miss = isMissPrize(picked);
+  /* ★ はずれのときは、もちものにも入手記録にも入れません */
+  if(!miss){
+    const existing = db.inventory.find(i=>i.refId==='gacha_'+picked.id);
+    if(existing){ existing.qty += 1; }
+    else{ db.inventory.push({id:'inv_g_'+picked.id+'_'+Date.now(), refId:'gacha_'+picked.id,
+      icon:picked.icon, name:picked.name, qty:1}); }
+    if(!Array.isArray(db.gachaSeen)) db.gachaSeen = [];
+    if(db.gachaSeen.indexOf(String(picked.id)) < 0) db.gachaSeen.push(String(picked.id));
+  }
 
+  saveDB(db);
+  gachaBusy = true;
+  renderAll();
+  playGachaAnim(()=>{                 /* 12秒再生 → 3秒停止 → 結果（変更なし） */
+    gachaBusy = false;
+    showGachaResult(picked, miss);
+    renderAll();
+  });
+}
 /* ==========================================================
    ★ ガチャのラインナップ
      ・1回でも当てた景品 … 本来のアイコンと名前
@@ -1691,31 +2008,51 @@ function isGachaSeen(id){
 function renderGachaLineup(){
   const wrap = $('gachaLineup');
   if(!wrap) return;
-  const pool = (db.gacha.pool || []).slice()
+  const all = (db.gacha.pool || []).slice()
     .sort((a,b)=> (num(a.ord,0)-num(b.ord,0)) || String(a.id).localeCompare(String(b.id)));
   const unknownIcon = db.icons.gachaUnknown || '❔';
-  const cells = pool.map(g=>{
-    const seen = isGachaSeen(g.id);
+  const cells = all.map(g=>{
+    const miss = isMissPrize(g);
+    const seen = miss || isGachaSeen(g.id);
     const icon = seen ? g.icon : unknownIcon;
-    const name = seen ? escapeHTML(g.name) : maskName(g.name);
-    const col  = rarityColor[g.rarity] || '#7a7a7a';
-    return `<div class="lineup-cell${seen ? '' : ' unknown'}" title="${seen ? escapeHTML(g.name) : 'まだ出ていない景品'}">
-        <div class="lineup-icon">${renderIcon(icon,'s-lineup', seen ? '🎁' : '❔')}</div>
+    const name = miss ? 'はずれ' : (seen ? escapeHTML(g.name) : maskName(g.name));
+    const col  = miss ? '#7a7a7a' : (rarityColor[g.rarity] || '#7a7a7a');
+    const cls  = miss ? ' miss' : (seen ? '' : ' unknown');
+    return `<div class="lineup-cell${cls}" title="${miss ? 'はずれ（アイテムはもらえません）' : (seen ? escapeHTML(g.name) : 'まだ出ていない景品')}">
+        <div class="lineup-icon">${renderIcon(icon,'s-lineup', miss ? '💨' : (seen ? '🎁' : '❔'))}</div>
         <div class="lineup-name">${name}</div>
-        <div class="lineup-rarity" style="color:${col}">${escapeHTML(g.rarity || 'N')}</div>
+        <div class="lineup-rarity" style="color:${col}">${miss ? 'はずれ' : escapeHTML(g.rarity || 'N')}</div>
       </div>`;
   }).join('');
-  const got = pool.filter(g=>isGachaSeen(g.id)).length;
+  const prizes = all.filter(g=>!isMissPrize(g));
+  const got = prizes.filter(g=>isGachaSeen(g.id)).length;
   wrap.innerHTML = '<div class="lineup-title">★ ラインナップ ★</div>'
     + `<div class="lineup-grid">${cells || '<div class="lineup-empty">景品がありません</div>'}</div>`
-    + (pool.length ? `<div class="lineup-note">あつめた ${got} / ${pool.length}　（❔＝まだ出ていない景品）<br>ラインナップはみんな共通です</div>` : '');
+    + (prizes.length ? `<div class="lineup-note">あつめた ${got} / ${prizes.length}　（❔＝まだ出ていない景品）<br>ラインナップはみんな共通です</div>` : '');
 }
+
 
 $('modalClose').onclick = ()=>$('gachaModal').classList.remove('show');
 $('gachaBtn').onclick = pullGacha;
+/* ★変更⑥ スキップは「下のスキップボタン」だけ。
+   演出画面のほかの場所をタップしても、けっして進みません */
+setSkipVisible(false);
+(function bindGachaSkip(){
+  const sk = $('gachaSkipBtn');
+  if(!sk) return;
+  const doSkip = e=>{
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    const ov = $('gachaAnim');
+    if(ov && ov.classList.contains('show')) finishGachaAnim();
+  };
+  sk.onclick = doSkip;
+  sk.onkeydown = e=>{ if(e.key==='Enter' || e.key===' ') doSkip(e); };
+})();
 $('imgModal').onclick = ()=>$('imgModal').classList.remove('show');
 document.addEventListener('keydown', e=>{
-  if(e.key === 'Escape') $('imgModal').classList.remove('show');
+  if(e.key !== 'Escape') return;
+  $('imgModal').classList.remove('show');
+  /* ★変更⑥ ガチャ演出は Esc でもスキップしません（スキップボタンのみ） */
 });
 
 /* ==========================================================
@@ -1878,7 +2215,7 @@ renderAll();
     const ROOT = window.LQ_ROOT || 'lifequest';
     const NS = (!ROOT || ROOT==='lifequest') ? '' : (String(ROOT).replace(/[^A-Za-z0-9_-]/g,'')+'_');
     const PROFILES = NS+'profiles', KIDS = NS+'kids', SHARED = NS+'shared';
-    const CAT_DOC = 'catalog';
+    const CATALOG = NS+'catalog', CAT_DOC = 'main';
     const APP_ID = META.APP_ID;
     const DB_KEY = META.DB_KEY, REG_KEY = META.REG_KEY;
     const DB_PREFIX = 'lifequest_db_v1_';
@@ -2095,63 +2432,34 @@ renderAll();
     function catCount(c){ return Object.keys(c.shopItems).length + Object.keys(c.gacha.pool).length; }
     function catSame(a,b){ return canon(catOf(a)) === canon(catOf(b)); }
 
+    let warnedNoCat = false;
+    /* ★ お店・ガチャは catalog/main だけが親。こども画面は読むだけです */
     async function syncCatalog(){
       if(!fdb || catOff || catBusy) return;
-      if(sharedCat === undefined) return;                 /* まだ共通データを受信していない */
+      if(sharedCat === undefined) return;             /* まだ受信していない */
+      if(sharedCat === null){                          /* まだ作られていない */
+        if(!warnedNoCat){ warnedNoCat = true;
+          console.warn('catalog/main がまだありません。かんりしゃ画面を一度ひらいてください'); }
+        return;
+      }
       const me = mirror.kids[APP_ID];
-      if(!me) return;                                     /* 自分のデータがまだ無い */
-      const ref = doc(fdb, SHARED, CAT_DOC);
-      const mineCat = catOf(me);
-
-      /* ① 共通データがまだ無い → いちばん中身が多い子のぶんで作る */
-      if(sharedCat === null){
-        let best = mineCat, bestN = catCount(mineCat);
-        Object.keys(mirror.kids).forEach(id=>{
-          const c = catOf(mirror.kids[id]); const n = catCount(c);
-          if(n > bestN){ best = c; bestN = n; }
-        });
-        if(!bestN) return;
-        catBusy = true;
-        try{ await setDoc(ref, Object.assign({rev:Date.now()}, best)); }
-        catch(e){ console.error('共通カタログを作れませんでした', e); catOff = true; }
-        catBusy = false;
-        return;
-      }
-
-      const rev = num(sharedCat.rev, 0);
-
-      /* ② 中身が同じ → 目じるし（catalogRev）だけそろえる */
-      if(catSame(me, sharedCat)){
-        if(num(me.catalogRev,0) !== rev){
-          catBusy = true;
-          try{
-            await updateDoc(doc(fdb, KIDS, APP_ID), {catalogRev:rev});
-            if(mirror.kids[APP_ID]) mirror.kids[APP_ID].catalogRev = rev;
-          }catch(e){ console.error(e); }
-          catBusy = false;
-        }
-        return;
-      }
-
-      /* ③ この子のぶんが「あとから編集された」 → 共通データを更新して全員にそろえる */
-      if(num(me.catalogRev,0) === rev){
-        catBusy = true;
-        try{ await setDoc(ref, Object.assign({rev:Date.now()}, mineCat)); }
-        catch(e){ console.error('共通カタログを更新できませんでした', e); catOff = true; }
-        catBusy = false;
-        return;
-      }
-
-      /* ④ 共通データのほうが新しい → この子に取りこむ（商品名・ガチャがそろう） */
+      if(!me) return;
+      if(catSame(me, sharedCat)) return;               /* もう同じ */
       catBusy = true;
       const ups = {};
-      diff(mineCat, catOf(sharedCat), '', ups);
-      ups.catalogRev = rev;
-      try{ await updateDoc(doc(fdb, KIDS, APP_ID), ups); }
-      catch(e){ console.error('共通カタログを取りこめませんでした', e); }
+      diff(catOf(me), catOf(sharedCat), '', ups);
+      if(Object.keys(ups).length){
+        try{
+          await updateDoc(doc(fdb, KIDS, APP_ID), ups);
+          const c = catOf(sharedCat);
+          if(mirror.kids[APP_ID]){
+            mirror.kids[APP_ID].shopItems = c.shopItems;
+            mirror.kids[APP_ID].gacha     = c.gacha;
+          }
+        }catch(e){ console.error('お店・ガチャを取りこめませんでした', e); }
+      }
       catBusy = false;
     }
-
     function refreshAll(){ if(window.__lqRefresh) window.__lqRefresh(true); }
     function firstReady(){
       if(readyCalled) return;
@@ -2200,8 +2508,8 @@ renderAll();
         if(!u) return;
         onSnapshot(collection(fdb, KIDS),     applyKidSnap,      err=>console.error(err));
         onSnapshot(collection(fdb, PROFILES), applyProfilesSnap, err=>console.error(err));
-        /* ★変更③ お店・ガチャの共通データ */
-        onSnapshot(doc(fdb, SHARED, CAT_DOC), applyCatalogSnap, err=>{
+        /* ★ お店・ガチャの共通データ（かんりしゃ画面が書く場所） */
+        onSnapshot(doc(fdb, CATALOG, CAT_DOC), applyCatalogSnap, err=>{
           console.error('共通カタログを読めません（Firestore ルールを確認してください）', err);
           catOff = true;
         });
